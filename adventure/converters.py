@@ -776,17 +776,17 @@ class PercentageConverter(Converter):
     async def convert(self, ctx, argument) -> float:
         arg = argument.lower()
         if arg in {"nan", "inf", "-inf", "+inf", "infinity", "-infinity", "+infinity"}:
-            raise BadArgument(_("Percentage must be between 0% and 100%"))
+            raise BadArgument(_("Percentage must be between 0% and 1000%"))
         match = PERCENTAGE.match(argument)
         if not match:
-            raise BadArgument(_("Percentage must be between 0% and 100%"))
+            raise BadArgument(_("Percentage must be between 0% and 1000%"))
         value = match.group(1)
         pencentage = match.group(2)
         arg = float(value)
         if pencentage:
             arg /= 100
-        if arg < 0 or arg > 1:
-            raise BadArgument(_("Percentage must be between 0% and 100%"))
+        if arg < 0 or arg > 10:
+            raise BadArgument(_("Percentage must be between 0% and 1000%"))
         return arg
 
 

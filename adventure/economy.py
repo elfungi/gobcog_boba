@@ -154,7 +154,7 @@ class EconomyCommands(AdventureMixin):
 
     @commands_atransfer.command(name="player", cooldown_after_parsing=True)
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=30, type=commands.BucketType.user)
     async def commands_atransfer_player(self, ctx: commands.Context, amount: int, *, player: discord.Member):
         """Transfer gold to another player."""
         if amount <= 0:

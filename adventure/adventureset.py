@@ -115,7 +115,7 @@ class AdventureSetCommands(AdventureMixin):
     async def adventureset_daily_bonus(self, ctx: commands.Context, day: DayConverter, percentage: PercentageConverter):
         """[Owner] Set the daily xp and currency bonus.
 
-        **percentage** must be between 0% and 100%.
+        **percentage** must be between 0% and 1000%.
         """
         day_val, day_text = day
         async with self.config.daily_bonus.all() as daily_bonus_data:

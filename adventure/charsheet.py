@@ -1552,6 +1552,9 @@ class Character:
                         i["degrade"] -= 1
                         if i.get("degrade", 0) >= 0:
                             backpack[n] = i
+                else:
+                    # keep rare, normal, and epic items as they are in backpack
+                    backpack[n] = i
 
         tresure = Treasure()
         if self.rebirths >= 15:
@@ -1608,7 +1611,7 @@ class Character:
                 last_slot = slots
                 continue
             item = getattr(self, slots.name)
-            items_to_keep[slots] = item.to_json() if self.rebirths >= 30 and item and item.set else {}
+            items_to_keep[slots] = item.to_json() if item else {}
         self.pieces_to_keep = items_to_keep
 
 

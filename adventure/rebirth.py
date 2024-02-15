@@ -77,7 +77,6 @@ class RebirthCommands(AdventureMixin):
                 _(
                     "Rebirthing will:\n\n"
                     "* cost {cost}% of your credits\n"
-                    "* cost all of your current gear\n"
                     "{space}- Legendary and Ascended items lose one degradation "
                     "point per rebirth and are broken down when they have 0 left.\n"
                     "{space}- Set items never disappear\n"
