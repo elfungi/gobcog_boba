@@ -261,6 +261,8 @@ class ClassAbilities(AdventureMixin):
 
             if not await self.allow_in_dm(ctx):
                 return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
+            await ctx.defer()
             async with self.get_lock(ctx.author):
                 try:
                     c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
@@ -381,8 +383,26 @@ class ClassAbilities(AdventureMixin):
                                     lang="ansi",
                                 )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-                            c.heroclass["pet"] = pet_list[pet]
-                            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+
+                            view = ConfirmView(60, ctx.author)
+                            msg = await ctx.send(
+                                "Do you want to keep the {pet}?".format(pet=pet),
+                                view=view
+                            )
+                            await view.wait()
+                            await msg.edit(view=None)
+                            if view.confirmed:
+                                c.heroclass["pet"] = pet_list[pet]
+                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                await ctx.send(
+                                    _("{author} and the {pet} set off together on their new wonderful adventures")
+                                    .format(author=escape(ctx.author.display_name), pet=pet)
+                                )
+                            else:
+                                await ctx.send(
+                                    _("{author} released the {pet} back into the wild. Who knows what could have been?")
+                                    .format(author=escape(ctx.author.display_name), pet=pet)
+                                )
                         elif roll == 1:
                             bonus = _("But they stepped on a twig and scared it away.")
                             pet_msg3 = box(
