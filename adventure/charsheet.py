@@ -1519,7 +1519,6 @@ class Character:
             self.rebirths += 1
         else:
             self.rebirths = dev_val
-        self.keep_equipped()
         backpack = {}
         for item in [
             self.head,
@@ -1534,7 +1533,7 @@ class Character:
             self.charm,
             self.neck,
         ]:
-            if item and item.to_json() not in list(self.pieces_to_keep.values()):
+            if item:
                 await self.add_to_backpack(item)
         forged = 0
         for k, v in self.backpack.items():
@@ -1600,20 +1599,6 @@ class Character:
             "last_known_currency": 0,
             "last_currency_check": 0,
         }
-
-    def keep_equipped(self):
-        items_to_keep = {}
-        last_slot = ""
-        for slots in Slot:
-            if slots is Slot.two_handed:
-                continue
-            if last_slot == "two handed":
-                last_slot = slots
-                continue
-            item = getattr(self, slots.name)
-            items_to_keep[slots] = item.to_json() if item else {}
-        self.pieces_to_keep = items_to_keep
-
 
 async def calculate_sp(lvl_end: int, c: Character):
     points_300 = lvl_end - 300 if lvl_end >= 300 else 0
