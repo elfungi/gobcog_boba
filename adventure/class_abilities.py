@@ -223,10 +223,7 @@ class ClassAbilities(AdventureMixin):
                     if c.hc in [HeroClasses.wizard, HeroClasses.cleric]:
                         c.heroclass["cooldown"] = max(300, (1200 - max((c.luck + c.total_int) * 2, 0))) + time.time()
                     elif c.hc is HeroClasses.ranger:
-                        c.heroclass["cooldown"] = max(1800, (7200 - max(c.luck * 2 + c.total_int * 2, 0))) + time.time()
-                        c.heroclass["catch_cooldown"] = (
-                            max(600, (3600 - max(c.luck * 2 + c.total_int * 2, 0))) + time.time()
-                        )
+                        c.heroclass["cooldown"] = 1800 + time.time()  # 30 min flat cooldown for ranger forage skills
                     elif c.hc is HeroClasses.berserker:
                         c.heroclass["cooldown"] = max(300, (1200 - max((c.luck + c.total_att) * 2, 0))) + time.time()
                     elif c.hc is HeroClasses.bard:
@@ -286,22 +283,6 @@ class ClassAbilities(AdventureMixin):
                         )
                     )
                 else:
-                    cooldown_time = max(600, (3600 - max((c.luck + c.total_int) * 2, 0)))
-                    if "catch_cooldown" not in c.heroclass:
-                        c.heroclass["catch_cooldown"] = cooldown_time + 1
-                    if c.heroclass["catch_cooldown"] > time.time():
-                        cooldown_time = c.heroclass["catch_cooldown"] - time.time()
-                        return await smart_embed(
-                            ctx,
-                            _(
-                                "You caught a pet recently, or you are a brand new Ranger. "
-                                "You will be able to go hunting in {}."
-                            ).format(
-                                humanize_timedelta(seconds=int(cooldown_time))
-                                if int(cooldown_time) >= 1
-                                else _("1 second")
-                            ),
-                        )
                     theme = await self.config.theme()
                     extra_pets = await self.config.themes.all()
                     extra_pets = extra_pets.get(theme, {}).get("pets", {})
@@ -385,7 +366,6 @@ class ClassAbilities(AdventureMixin):
                                 )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
                             c.heroclass["pet"] = pet_list[pet]
-                            c.heroclass["catch_cooldown"] = time.time() + cooldown_time
                             await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
                         elif roll == 1:
                             bonus = _("But they stepped on a twig and scared it away.")
@@ -432,7 +412,7 @@ class ClassAbilities(AdventureMixin):
                     _("{author}, Your backpack is currently full.").format(author=bold(ctx.author.display_name))
                 )
                 return
-            cooldown_time = max(1800, (7200 - max((c.luck + c.total_int) * 2, 0)))
+            cooldown_time = 1800  # 30 min flat cooldown
             if "cooldown" not in c.heroclass:
                 c.heroclass["cooldown"] = cooldown_time + 1
             if c.heroclass["cooldown"] <= time.time():

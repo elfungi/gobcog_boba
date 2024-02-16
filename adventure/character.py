@@ -50,7 +50,7 @@ class CharacterCommands(AdventureMixin):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         if amount < 1:
             return await smart_embed(ctx, _("Nice try :smirk:"), ephemeral=True)
-        skill = skill.value if skill is not None else None  # type: ignore This returns an enum now
+        skill = skill.value if skill is not None else None  # type - ignore This returns an enum now
         await ctx.defer()
         async with self.get_lock(ctx.author):
             try:

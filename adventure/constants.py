@@ -592,7 +592,6 @@ class HeroClasses(Enum):
         }
         if self is HeroClasses.ranger:
             ret["pet"] = {}
-            ret["catch_cooldown"] = time.time()
         return ret
 
 

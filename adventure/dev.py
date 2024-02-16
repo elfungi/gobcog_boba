@@ -180,8 +180,6 @@ class DevCommands(AdventureMixin):
                     continue
                 c.heroclass["ability"] = False
                 c.heroclass["cooldown"] = 0
-                if "catch_cooldown" in c.heroclass:
-                    c.heroclass["catch_cooldown"] = 0
                 await self.config.user(target).set(await c.to_json(ctx, self.config))
         await ctx.tick()
 
