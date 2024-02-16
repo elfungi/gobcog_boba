@@ -261,6 +261,8 @@ class ClassAbilities(AdventureMixin):
 
             if not await self.allow_in_dm(ctx):
                 return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
+            await ctx.defer()
             async with self.get_lock(ctx.author):
                 try:
                     c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
@@ -313,14 +315,30 @@ class ClassAbilities(AdventureMixin):
                         else:
                             can_catch = False
                             pet_msg4 = _("\nPerhaps you're missing some requirements to tame {pet}.").format(pet=pet)
+
+                    pet_bonus = pet_list[pet].get("bonus", 0)
+                    if pet_bonus >= 1.9:
+                        pet_bonus_str = "Its brilliant glow blinded you for a brief moment!"
+                    elif pet_bonus >= 1.7:
+                        pet_bonus_str = "It's full of energy and zooming around at amazing speeds!"
+                    elif pet_bonus >= 1.5:
+                        pet_bonus_str = "It beams at you with bright eyes and eager promise."
+                    elif pet_bonus >= 1.3:
+                        pet_bonus_str = "It looks at you in anticipation."
+                    elif pet_bonus >= 1.1:
+                        pet_bonus_str = "It made an effort to move, but it seems a little clumsy."
+                    else:
+                        pet_bonus_str = "It's just loafing around."
+
+                    pet_base_msg = "{c} is trying to tame a pet. " + pet_bonus_str
                     pet_msg = box(
-                        _("{c} is trying to tame a pet.").format(c=escape(ctx.author.display_name)),
+                        _(pet_base_msg).format(c=escape(ctx.author.display_name)),
                         lang="ansi",
                     )
                     user_msg = await ctx.send(pet_msg)
                     await asyncio.sleep(2)
                     pet_msg2 = box(
-                        _("{author} started tracking a wild {pet_name} with a roll of {dice}({roll}).").format(
+                        _("{author} tries their luck to tame the wild {pet_name} with a roll of {dice}({roll}).").format(
                             dice=self.emojis.dice,
                             author=escape(ctx.author.display_name),
                             pet_name=pet,
@@ -365,8 +383,26 @@ class ClassAbilities(AdventureMixin):
                                     lang="ansi",
                                 )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-                            c.heroclass["pet"] = pet_list[pet]
-                            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+
+                            view = ConfirmView(60, ctx.author)
+                            msg = await ctx.send(
+                                "Do you want to keep the {pet}?".format(pet=pet),
+                                view=view
+                            )
+                            await view.wait()
+                            await msg.edit(view=None)
+                            if view.confirmed:
+                                c.heroclass["pet"] = pet_list[pet]
+                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                await ctx.send(
+                                    _("{author} and the {pet} set off together on their new wonderful adventures.")
+                                    .format(author=escape(ctx.author.display_name), pet=pet)
+                                )
+                            else:
+                                await ctx.send(
+                                    _("{author} released the {pet} back into the wild. Who knows what could have been?")
+                                    .format(author=escape(ctx.author.display_name), pet=pet)
+                                )
                         elif roll == 1:
                             bonus = _("But they stepped on a twig and scared it away.")
                             pet_msg3 = box(
