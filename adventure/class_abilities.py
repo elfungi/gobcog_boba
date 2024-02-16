@@ -313,14 +313,30 @@ class ClassAbilities(AdventureMixin):
                         else:
                             can_catch = False
                             pet_msg4 = _("\nPerhaps you're missing some requirements to tame {pet}.").format(pet=pet)
+
+                    pet_bonus = pet_list[pet].get("bonus", 0)
+                    if pet_bonus >= 1.9:
+                        pet_bonus_str = "Its brilliant glow blinded you for a brief moment!"
+                    elif pet_bonus >= 1.7:
+                        pet_bonus_str = "It's full of energy and zooming around at amazing speeds!"
+                    elif pet_bonus >= 1.5:
+                        pet_bonus_str = "It beams at you with bright eyes and eager promise."
+                    elif pet_bonus >= 1.3:
+                        pet_bonus_str = "It looks at you in anticipation."
+                    elif pet_bonus >= 1.1:
+                        pet_bonus_str = "It made an effort to move, but it seems a little clumsy."
+                    else:
+                        pet_bonus_str = "It's just loafing around."
+
+                    pet_base_msg = "{c} is trying to tame a pet. " + pet_bonus_str
                     pet_msg = box(
-                        _("{c} is trying to tame a pet.").format(c=escape(ctx.author.display_name)),
+                        _(pet_base_msg).format(c=escape(ctx.author.display_name)),
                         lang="ansi",
                     )
                     user_msg = await ctx.send(pet_msg)
                     await asyncio.sleep(2)
                     pet_msg2 = box(
-                        _("{author} started tracking a wild {pet_name} with a roll of {dice}({roll}).").format(
+                        _("{author} tries their luck to tame the wild {pet_name} with a roll of {dice}({roll}).").format(
                             dice=self.emojis.dice,
                             author=escape(ctx.author.display_name),
                             pet_name=pet,
