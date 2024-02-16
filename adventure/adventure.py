@@ -2611,8 +2611,15 @@ class Adventure(
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c._int / 10)), 0))
-            usercp = int(cp + max((cp * 0.1 * min(1000, (c._luck + c._att) / 10)), 0))
+
+            if c.hc is HeroClasses.bard:
+                # scale bard rewards based off their CHA stat instead of ATT & INT
+                userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c._cha / 10)), 0))
+                usercp = int(cp + max((cp * 0.1 * min(1000, (c._luck + c._cha) / 10)), 0))
+            else:
+                userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c._int / 10)), 0))
+                usercp = int(cp + max((cp * 0.1 * min(1000, (c._luck + c._att) / 10)), 0))
+
             userxp = int(userxp * (c.gear_set_bonus.get("xpmult", 1) + daymult + session_bonus))
             usercp = int(usercp * (c.gear_set_bonus.get("cpmult", 1) + daymult))
             newxp += userxp
