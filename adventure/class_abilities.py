@@ -395,7 +395,7 @@ class ClassAbilities(AdventureMixin):
                                 c.heroclass["pet"] = pet_list[pet]
                                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
                                 await ctx.send(
-                                    _("{author} and the {pet} set off together on their new wonderful adventures")
+                                    _("{author} and the {pet} set off together on their new wonderful adventures.")
                                     .format(author=escape(ctx.author.display_name), pet=pet)
                                 )
                             else:
