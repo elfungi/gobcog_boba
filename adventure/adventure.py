@@ -99,7 +99,7 @@ class Adventure(
         self.bot = bot
         bank._init(bot)
         self._last_trade = {}
-        self._adv_results = AdventureResults(20)
+        self._adv_results = AdventureResults(10)  # 10 results is about 50-60min of gameplay
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}\N{VARIATION SELECTOR-16}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
@@ -691,7 +691,7 @@ class Adventure(
         async for (e, (m, stats)) in AsyncIter(monsters.items(), steps=100).enumerate(start=1):
             if stat_range["max_stat"] > 0.0:
                 main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
-                appropriate_range = (stat_range["min_stat"] * 0.5) <= main_stat <= (stat_range["max_stat"] * 1.2)
+                appropriate_range = (stat_range["min_stat"] * 0.35) <= main_stat <= (stat_range["max_stat"] * 1.2)
             else:
                 appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 5)
             if not appropriate_range:
@@ -893,7 +893,6 @@ class Adventure(
                 self.bot.dispatch("adventure_possessed", ctx)
         else:
             if transcended:
-                # Hide Transcended on Easy mode
                 new_challenge = challenge.replace("Ascended", "")
             timer = 60 * 3
             no_monster = random.randint(0, 100) == 25

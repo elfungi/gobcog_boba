@@ -132,3 +132,4 @@ dmypy.json
 
 !/data/default/gen.py
 !/data/default/temp.json
+/test_scripts/*

@@ -61,10 +61,10 @@ class AdventureResults:
         if ctx.guild.id not in self._last_raids:
             self._last_raids[ctx.guild.id] = []
         SOLO_RAID_SCALE: float = 0.25
-        min_stat: float = 0.0
-        max_stat: float = 0.0
+        min_stat: float = 200.0
+        max_stat: float = 600.0
         stat_type: str = "hp"
-        win_percent: float = 0.0
+        win_percent: float = 0.5
         if len(self._last_raids.get(ctx.guild.id, [])) == 0:
             return StatRange(stat_type=stat_type, min_stat=min_stat, max_stat=max_stat, win_percent=win_percent)
 
@@ -79,8 +79,6 @@ class AdventureResults:
         raids = self._last_raids.get(ctx.guild.id, [])
         raid_count = len(raids)
         if raid_count == 0:
-            num_wins = self._num_raids // 2
-            raid_count = self._num_raids
             win_percent = 0.5
         else:
             for raid in raids:
@@ -103,7 +101,7 @@ class AdventureResults:
                 stat_type = "dipl"
                 avg_amount = talk_amount / num_talk
             win_percent = num_wins / raid_count
-            min_stat = avg_amount * 0.75
+            min_stat = avg_amount * 0.5
             max_stat = avg_amount * 2
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
