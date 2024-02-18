@@ -186,7 +186,7 @@ class Trader(discord.ui.View):
             room = ctx
         self.cog.bot.dispatch("adventure_cart", ctx)  # dispatch after silent return
         if stockcount is None:
-            stockcount = random.randint(10, 15)
+            stockcount = 10
         self.cog._curent_trader_stock[ctx.guild.id] = (stockcount, {})
 
         stock = await self.generate(stockcount)
@@ -216,15 +216,15 @@ class Trader(discord.ui.View):
                 dex = item["item"].dex
             text += box(
                 _(
-                    "\n[{i}] Lvl req {lvl} | {item_name} ("
-                    "Attack: {str_att}, "
-                    "Charisma: {str_cha}, "
-                    "Intelligence: {str_int}, "
-                    "Dexterity: {str_dex}, "
-                    "Luck: {str_luck} "
-                    "[{hand}]) for {item_price} {currency_name}."
+                    "\n{item_name} [{hand}] ("
+                    "Lv: {lvl}, "
+                    "ATT: {str_att}, "
+                    "CHA: {str_cha}, "
+                    "INT: {str_int}, "
+                    "DEX: {str_dex}, "
+                    "LUK: {str_luck} "
+                    ") {item_price} {currency_name}."
                 ).format(
-                    i=str(index + 1),
                     item_name=item["item"].ansi,
                     lvl=item["item"].lvl,
                     str_att=str(att),
