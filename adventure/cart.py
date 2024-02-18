@@ -278,10 +278,10 @@ class Trader(discord.ui.View):
                 # however, stats on these set piece vary wildly, so we use a log function to normalize out the values
                 # targeting a price range of 750k-1.2m
                 normalized_stats = math.log(item.max_main_stat, 3) + 10
-                price = max(price_func(normalized_stats), base) * 1300
+                price = round(max(price_func(normalized_stats), base) * 1300)
             else:
                 # want 80% sell price buying price - mark up 1.25
-                price = max(price_func(item.max_main_stat), base) * 1.25
+                price = round(max(price_func(item.max_main_stat), base) * 1.25)
 
             self.items.update({item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}})
             self.add_item(TraderButton(item, self.cog))

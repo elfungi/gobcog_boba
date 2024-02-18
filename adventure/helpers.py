@@ -141,7 +141,7 @@ def _sell_base(item: Item):
 
 def _sell(c: Character, item: Item, *, amount: int = 1):
     base_0, price_func = _sell_base(item)
-    price = price_func(item.max_main_stat)
+    price = int(price_func(item.max_main_stat))
     price += price * max(int((c.total_cha) / 1000), -1)
 
     if c.luck > 0:
