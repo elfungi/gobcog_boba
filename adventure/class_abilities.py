@@ -330,19 +330,22 @@ class ClassAbilities(AdventureMixin):
                     else:
                         pet_bonus_str = "It's just loafing around."
 
-                    pet_base_msg = "{c} is trying to tame a pet. " + pet_bonus_str
+                    pet_base_msg = "{c} encounters a wild {pet_name}. " + pet_bonus_str
                     pet_msg = box(
-                        _(pet_base_msg).format(c=escape(ctx.author.display_name)),
+                        _(pet_base_msg).format(
+                            c=escape(ctx.author.display_name),
+                            pet_name=pet
+                        ),
                         lang="ansi",
                     )
                     user_msg = await ctx.send(pet_msg)
                     await asyncio.sleep(2)
                     pet_msg2 = box(
-                        _("{author} tries their luck to tame the wild {pet_name} with a roll of {dice}({roll}).").format(
-                            dice=self.emojis.dice,
+                        _("{author} attempts to tame the wild {pet_name}. [{dice}{roll}]").format(
                             author=escape(ctx.author.display_name),
                             pet_name=pet,
-                            roll=roll,
+                            dice=self.emojis.dice,
+                            roll=roll
                         ),
                         lang="ansi",
                     )
@@ -350,9 +353,9 @@ class ClassAbilities(AdventureMixin):
                     await asyncio.sleep(2)
                     bonus = ""
                     if roll == 1:
-                        bonus = _("But they stepped on a twig and scared it away.")
+                        bonus = _("They approach the creature but trips over their own foot. How embarrassing.")
                     elif roll in [50, 25]:
-                        bonus = _("They happen to have its favorite food.")
+                        bonus = _("They try to lure the the creature in with some delicious morsels of food.")
                     if force_catch or (dipl_value > pet_list[pet]["cha"] and roll > 1 and can_catch):
                         if force_catch:
                             roll = 0
@@ -379,7 +382,12 @@ class ClassAbilities(AdventureMixin):
                                 )
                             else:
                                 pet_msg3 = box(
-                                    _("{bonus}\nThey successfully tamed the {pet}.").format(bonus=bonus, pet=pet),
+                                    _("{bonus}\nThey successfully tamed the {pet}. [{dice}{roll}]").format(
+                                        bonus=bonus,
+                                        pet=pet,
+                                        dice=self.emojis.dice,
+                                        roll=roll
+                                    ),
                                     lang="ansi",
                                 )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
@@ -394,32 +402,37 @@ class ClassAbilities(AdventureMixin):
                             if view.confirmed:
                                 c.heroclass["pet"] = pet_list[pet]
                                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
-                                await ctx.send(
+                                confirm_msg = box(
                                     _("{author} and the {pet} set off together on their new wonderful adventures.")
                                     .format(author=escape(ctx.author.display_name), pet=pet)
                                 )
+                                await ctx.send(confirm_msg)
                             else:
-                                await ctx.send(
+                                confirm_msg = box(
                                     _("{author} released the {pet} back into the wild. Who knows what could have been?")
-                                    .format(author=escape(ctx.author.display_name), pet=pet)
+                                    .format(author=escape(ctx.author.display_name), pet=pet),
+                                    lang="ansi"
                                 )
-                        elif roll == 1:
-                            bonus = _("But they stepped on a twig and scared it away.")
-                            pet_msg3 = box(
-                                _("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet),
-                                lang="ansi",
-                            )
-                            await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
+                                await ctx.send(confirm_msg)
                         else:
-                            bonus = ""
                             pet_msg3 = box(
-                                _("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet),
+                                _("{bonus}\nUnfortunately, the {pet} escaped. [{dice}{roll}]").format(
+                                    bonus=bonus,
+                                    pet=pet,
+                                    dice=self.emojis.dice,
+                                    roll=roll
+                                ),
                                 lang="ansi",
                             )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
                     else:
                         pet_msg3 = box(
-                            _("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet),
+                            _("{bonus}\nUnfortunately, the {pet} doesn't seem very interested in you.").format(
+                                bonus=bonus,
+                                pet=pet,
+                                dice=self.emojis.dice,
+                                roll=roll
+                            ),
                             lang="ansi",
                         )
                         await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
