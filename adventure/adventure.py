@@ -2623,10 +2623,12 @@ class Adventure(
             usercp = int(usercp * (c.gear_set_bonus.get("cpmult", 1) + daymult))
             newxp += userxp
             newcp += usercp
-            roll = random.randint(1, 5)
+            # bonus roll for rangers - 20% base chance to proc + 1% every 100 charisma
+            roll = random.randint(1, 100)
+            target_number = 20 + int(c.total_cha / 100)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
-                roll = 5
-            if roll == 5 and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
+                roll = 1  # pick 1 to guarantee bonus if pet allows it
+            if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
                 petxp = int(userxp * c.heroclass["pet"]["bonus"])
                 newxp += petxp
                 userxp += petxp
