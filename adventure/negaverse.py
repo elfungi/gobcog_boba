@@ -162,7 +162,7 @@ class Negaverse(AdventureMixin):
             if is_dev(nega_member):
                 roll = -2
             versus = random.randint(10, 60)
-            xp_mod = random.randint(5, 10)
+            xp_mod = random.randint(1, 5)
             daymult = self._daily_bonus.get(str(datetime.today().isoweekday()), 0)
             xp_won = int((offering / xp_mod))
             xp_to_max = int((character.maxlevel + 1) ** 3.5)
