@@ -125,18 +125,23 @@ async def _remaining(epoch):
     return (out, finish, remaining)
 
 
-def _sell(c: Character, item: Item, *, amount: int = 1):
+def _sell_base(item: Item):
     if item.rarity is Rarities.ascended:
-        base = (5000, 10000)
+        base = (7400, 7700)
     elif item.rarity is Rarities.legendary:
-        base = (1000, 2000)
+        base = (1425, 1575)
     elif item.rarity is Rarities.epic:
-        base = (500, 750)
+        base = (610, 640)
     elif item.rarity is Rarities.rare:
-        base = (250, 500)
+        base = (365, 385)
     else:
-        base = (10, 100)
-    price = random.randint(base[0], base[1]) * abs(item.max_main_stat)
+        base = (50, 60)
+    return base[0], lambda attr: random.randint(base[0], base[1]) * abs(attr)
+
+
+def _sell(c: Character, item: Item, *, amount: int = 1):
+    base_0, price_func = _sell_base(item)
+    price = price_func(item.max_main_stat)
     price += price * max(int((c.total_cha) / 1000), -1)
 
     if c.luck > 0:
@@ -147,7 +152,7 @@ def _sell(c: Character, item: Item, *, amount: int = 1):
         price = 0
     price += round(price * min(0.1 * c.rebirths / 15, 0.4))
 
-    return max(price, base[0])
+    return max(price, base_0)
 
 
 def is_dev(user: Union[discord.User, discord.Member]):
