@@ -5,6 +5,7 @@ import asyncio
 import logging
 import random
 import time
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -16,7 +17,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from .bank import bank
 from .charsheet import Character, Item
 from .constants import ANSITextColours, Rarities, Slot
-from .helpers import _get_epoch, escape, is_dev, smart_embed
+from .helpers import _get_epoch, escape, is_dev, smart_embed, _sell_base
 
 _ = Translator("Adventure", __file__)
 
@@ -185,7 +186,7 @@ class Trader(discord.ui.View):
             room = ctx
         self.cog.bot.dispatch("adventure_cart", ctx)  # dispatch after silent return
         if stockcount is None:
-            stockcount = random.randint(3, 9)
+            stockcount = random.randint(10, 15)
         self.cog._curent_trader_stock[ctx.guild.id] = (stockcount, {})
 
         stock = await self.generate(stockcount)
@@ -244,33 +245,43 @@ class Trader(discord.ui.View):
         )
         self.message = await room.send(text, view=self)
 
-    async def generate(self, howmany: int = 5):
+    async def generate(self, howmany: int = 10):
         output = {}
         howmany = max(min(25, howmany), 1)
         while len(self.items) < howmany:
             rarity_roll = random.random()
-            #  rarity_roll = .9
-            # 1% legendary
-            if rarity_roll >= 0.95:
+            is_set_item = False
+
+            # 0.2% set
+            if rarity_roll >= 0.998:
+                item = await self.ctx.cog._genitem(self.ctx, Rarities.set)
+                is_set_item = True
+            # 1.8% ascended
+            elif rarity_roll >= 0.98:
+                item = await self.ctx.cog._genitem(self.ctx, Rarities.ascended)
+            # 15% legendary
+            elif rarity_roll >= 0.83:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.legendary)
-                # min. 10 stat for legendary, want to be about 50k
-                price = random.randint(2500, 5000)
-            # 20% epic
-            elif rarity_roll >= 0.7:
+            # 35% epic
+            elif rarity_roll >= 0.48:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.epic)
-                # min. 5 stat for epic, want to be about 25k
-                price = random.randint(1000, 2000)
             # 35% rare
-            elif rarity_roll >= 0.35:
+            elif rarity_roll >= 0.13:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.rare)
-                # around 3 stat for rare, want to be about 3k
-                price = random.randint(500, 1000)
+            # 13% normal
             else:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.normal)
-                # 1 stat for normal, want to be <1k
-                price = random.randint(100, 500)
-            # 35% normal
-            price *= item.max_main_stat
+
+            base, price_func = _sell_base(item)
+            if is_set_item:
+                # set items have a low base sell price so mark them up significantly
+                # however, stats on these set piece vary wildly, so we use a log function to normalize out the values
+                # targeting a price range of 750k-1.2m
+                normalized_stats = math.log(item.max_main_stat, 3) + 10
+                price = max(price_func(normalized_stats), base) * 1300
+            else:
+                # want 80% sell price buying price - mark up 1.25
+                price = max(price_func(item.max_main_stat), base) * 1.25
 
             self.items.update({item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}})
             self.add_item(TraderButton(item, self.cog))
