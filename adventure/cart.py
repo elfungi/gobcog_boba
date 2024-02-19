@@ -32,7 +32,7 @@ class TraderModal(discord.ui.Modal):
         self.ctx = ctx
         self.view = view
         self.amount_input = discord.ui.TextInput(
-            label=item.name,
+            label=item.name[:43] + "..." if len(item.name) > 45 else item.name,  # discord form input allows 45 max len
             style=discord.TextStyle.short,
             placeholder=_("Amount"),
             max_length=100,
