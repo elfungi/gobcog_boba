@@ -144,8 +144,6 @@ def _sell(c: Character, item: Item, *, amount: int = 1):
     price = int(price_func(item.max_main_stat))
     price += price * max(int((c.total_cha) / 1000), -1)
 
-    if c.luck > 0:
-        price = price + round(price * (c.luck / 1000))
     if c.luck < 0:
         price = price - round(price * (abs(c.luck) / 1000))
     if price < 0:

@@ -281,7 +281,7 @@ class Trader(discord.ui.View):
                 price = round(max(price_func(normalized_stats), base) * 1300)
             else:
                 # want 80% sell price buying price - mark up 1.25
-                price = round(max(price_func(item.max_main_stat), base) * 1.25)
+                price = round(max(price_func(item.max_main_stat), base) * 1.6)
 
             self.items.update({item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}})
             self.add_item(TraderButton(item, self.cog))
