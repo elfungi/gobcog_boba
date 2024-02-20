@@ -438,7 +438,7 @@ class Skills(Enum):
 
 
 class ANSITextColours(Enum):
-    normal = 0
+    normal = 37
     gray = 30
     grey = 30
     red = 31

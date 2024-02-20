@@ -3,17 +3,18 @@
 		"locastan",
 		"aikaterna",
 		"TrustyJAID",
-		"Draper"
+		"Draper",
+		"elfungi"
 	],
-	"description": "An RPG for Discord.",
-    "install_msg": "Thank you for installing the Adventure cog, based on the GoblinsComic Adventure Party cog by locastan. Use `[p]load adventure` to get started and check out `[p]help Adventure`.",
+	"description": "An RPG for Discord - Boba Edition.",
+    "install_msg": "Thank you for installing the Adventure cog, based on the GoblinsComic Adventure Party cog by locastan. This project is a fork done by the orginal 4 authors in the authors list, and modified and adopted for the enjoyment of a small group of friends. Use `[p]load adventure` to get started and check out `[p]help Adventure`.",
     "min_python_version": [3, 8, 1],
 	"min_bot_version": "3.5.0",
     "permissions" : [
 		"add_reactions",
 		"manage_messages"
 	],
-	"short": "An RPG for Discord.",
+	"short": "An RPG for Discord - Boba Edition.",
 	"tags": [
 		"rpg",
 		"adventure"
