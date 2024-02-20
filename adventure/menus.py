@@ -19,6 +19,7 @@ log = logging.getLogger("red.cogs.adventure.menus")
 
 SELL_CONFIRM_AMOUNT = -420
 
+
 class LeaderboardSource(menus.ListPageSource):
     def __init__(self, entries: List[Tuple[int, Dict]]):
         super().__init__(entries, per_page=10)
@@ -407,7 +408,7 @@ class EconomySource(menus.ListPageSource):
 
 
 class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], balance = 0, include_sets = True, sold_count = 0, sold_price = 0):
+    def __init__(self, entries: List[Dict], balance=0, include_sets=True, sold_count=0, sold_price=0):
         super().__init__(entries, per_page=10)
         self._balance = balance
         self._include_sets = include_sets
@@ -419,7 +420,7 @@ class PrettyBackpackSource(menus.ListPageSource):
         return True
 
     async def format_page(self, menu: menus.MenuPages, entries: List[Dict]):
-        format_ansi = lambda text, ansi_code = ANSITextColours.white: f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
+        format_ansi = lambda text, ansi_code=ANSITextColours.white: f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
         ctx = menu.ctx
         name_len = 64
         slot_len = 8
@@ -429,7 +430,7 @@ class PrettyBackpackSource(menus.ListPageSource):
         start_position = (menu.current_page * self.per_page) + 1
 
         header = (
-            f"{format_ansi('Name'):{name_len}}" # use ansi on this field to match spacing on table
+            f"{format_ansi('Name'):{name_len}}"  # use ansi on this field to match spacing on table
             f"{'Slot':{slot_len}}"
             f"{'ATT':{attr_len}}"
             f"{'CHA':{attr_len}}"
@@ -459,7 +460,8 @@ class PrettyBackpackSource(menus.ListPageSource):
             rarity = item["rarity"]
             cannot_equip = item["cannot_equip"]
 
-            deg_value = degrade if rarity in [Rarities.legendary, Rarities.event, Rarities.ascended] and degrade >= 0 else ""
+            deg_value = degrade if rarity in [Rarities.legendary, Rarities.event,
+                                              Rarities.ascended] and degrade >= 0 else ""
             set_value = _set if rarity in [Rarities.set] else ""
 
             ansi_name = rarity.as_ansi(name)
@@ -479,7 +481,6 @@ class PrettyBackpackSource(menus.ListPageSource):
             if self._include_sets:
                 i_data += f"     {set_value:{set_len}}"
             data.append(i_data)
-
 
         msg = "```{}'s Backpack - {} gold```".format(author, humanize_number(self._balance))
         msg += "```ansi\n{}```".format(header)
@@ -513,9 +514,9 @@ class PrettyBackpackSource(menus.ListPageSource):
 
 class StopButton(discord.ui.Button):
     def __init__(
-        self,
-        style: discord.ButtonStyle,
-        row: Optional[int] = None,
+            self,
+            style: discord.ButtonStyle,
+            row: Optional[int] = None,
     ):
         super().__init__(style=style, row=row)
         self.style = style
@@ -552,13 +553,13 @@ class _NavigateButton(discord.ui.Button):
 
 class BaseMenu(discord.ui.View):
     def __init__(
-        self,
-        source: menus.PageSource,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
-        timeout: int = 180,
-        message: discord.Message = None,
-        **kwargs: Any,
+            self,
+            source: menus.PageSource,
+            clear_reactions_after: bool = True,
+            delete_message_after: bool = False,
+            timeout: int = 180,
+            message: discord.Message = None,
+            **kwargs: Any,
     ) -> None:
         super().__init__(timeout=timeout)
         self._source = source
@@ -619,12 +620,12 @@ class BaseMenu(discord.ui.View):
         pass
 
     async def start(
-        self,
-        ctx: Optional[commands.Context],
-        *,
-        wait=False,
-        page: int = 0,
-        interaction: Optional[discord.Interaction] = None,
+            self,
+            ctx: Optional[commands.Context],
+            *,
+            wait=False,
+            page: int = 0,
+            interaction: Optional[discord.Interaction] = None,
     ):
         """
         Starts the interactive menu session.
@@ -679,7 +680,7 @@ class BaseMenu(discord.ui.View):
         await interaction.response.edit_message(**kwargs, view=self)
 
     async def send_initial_message(
-        self, ctx: Optional[commands.Context], page: int = 0, interaction: Optional[discord.Interaction] = None
+            self, ctx: Optional[commands.Context], page: int = 0, interaction: Optional[discord.Interaction] = None
     ):
         """
 
@@ -723,16 +724,16 @@ class BaseMenu(discord.ui.View):
 
 class ScoreBoardMenu(BaseMenu):
     def __init__(
-        self,
-        source: menus.PageSource,
-        cog: Optional[commands.Cog] = None,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
-        timeout: int = 180,
-        message: discord.Message = None,
-        show_global: bool = False,
-        current_scoreboard: str = "wins",
-        **kwargs: Any,
+            self,
+            source: menus.PageSource,
+            cog: Optional[commands.Cog] = None,
+            clear_reactions_after: bool = True,
+            delete_message_after: bool = False,
+            timeout: int = 180,
+            message: discord.Message = None,
+            show_global: bool = False,
+            current_scoreboard: str = "wins",
+            **kwargs: Any,
     ) -> None:
         super().__init__(
             source=source,
@@ -878,16 +879,16 @@ class ScoreBoardMenu(BaseMenu):
 
 class LeaderboardMenu(BaseMenu):
     def __init__(
-        self,
-        source: menus.PageSource,
-        cog: Optional[commands.Cog] = None,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
-        timeout: int = 180,
-        message: discord.Message = None,
-        show_global: bool = False,
-        current_scoreboard: str = "leaderboard",
-        **kwargs: Any,
+            self,
+            source: menus.PageSource,
+            cog: Optional[commands.Cog] = None,
+            clear_reactions_after: bool = True,
+            delete_message_after: bool = False,
+            timeout: int = 180,
+            message: discord.Message = None,
+            show_global: bool = False,
+            current_scoreboard: str = "leaderboard",
+            **kwargs: Any,
     ) -> None:
         super().__init__(
             source,
@@ -939,14 +940,14 @@ class LeaderboardMenu(BaseMenu):
 
 class BackpackMenu(BaseMenu):
     def __init__(
-        self,
-        source: menus.PageSource,
-        help_command: commands.Command,
-        clear_reactions_after: bool = True,
-        delete_message_after: bool = False,
-        timeout: int = 180,
-        message: discord.Message = None,
-        **kwargs: Any,
+            self,
+            source: menus.PageSource,
+            help_command: commands.Command,
+            clear_reactions_after: bool = True,
+            delete_message_after: bool = False,
+            timeout: int = 180,
+            message: discord.Message = None,
+            **kwargs: Any,
     ) -> None:
         super().__init__(
             source,
@@ -1060,7 +1061,8 @@ class InteractiveBackpackMenu(BaseMenu):
             self.confirm_sell.disabled = True
             self.confirm_sell.style = discord.ButtonStyle.grey
 
-    @discord.ui.button(style=discord.ButtonStyle.red, emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+                       row=1)
     async def _stop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         button.view.stop()
         if interaction.message.flags.ephemeral:
@@ -1068,12 +1070,14 @@ class InteractiveBackpackMenu(BaseMenu):
             return
         await interaction.message.delete()
 
-    @discord.ui.button(style=discord.ButtonStyle.grey, emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.grey,
+                       emoji="\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
     async def _back_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         button.view.current_page -= 1 if button.view.current_page > 0 else 0
         await self.navigate_page(interaction, button)
 
-    @discord.ui.button(style=discord.ButtonStyle.grey, emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.grey,
+                       emoji="\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
     async def _forward_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         max_pages = self.source.get_max_pages()
         if button.view.current_page + 1 < max_pages:
@@ -1141,7 +1145,8 @@ class InteractiveBackpackMenu(BaseMenu):
         self._stats = self.initial_stats_filters()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b \u200b \u200b Default \u200b \u200b \u200b", row=4)
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b \u200b \u200b \u200b Default \u200b \u200b \u200b", row=4)
     async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "default"
         self._equippable = False
@@ -1149,7 +1154,8 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b \u200b \u200b \u200b Can Equip \u200b \u200b \u200b \u200b", row=4)
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b \u200b \u200b \u200b \u200b Can Equip \u200b \u200b \u200b \u200b", row=4)
     async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "can_equip"
         self._equippable = True
@@ -1157,7 +1163,9 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b", row=4)
+    @discord.ui.button(style=discord.ButtonStyle.red,
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
+                       row=4)
     async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.initial_state()
         await self.do_change_source(interaction)
@@ -1174,7 +1182,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._sold_price = 0
 
     async def get_backpack_item_for_sell(self):
-        return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities, equippable=self._equippable, delta=self._delta)
+        return await self.get_backpack_items(True)
 
     def get_filter_attr(self, attr):
         value = self._stats[attr]
@@ -1183,7 +1191,7 @@ class InteractiveBackpackMenu(BaseMenu):
         else:
             return None
 
-    async def get_backpack_items(self):
+    async def get_backpack_items(self, for_sell=False):
         att_filter = self.get_filter_attr('att')
         cha_filter = self.get_filter_attr('cha')
         int_filter = self.get_filter_attr('int')
@@ -1191,23 +1199,36 @@ class InteractiveBackpackMenu(BaseMenu):
         luk_filter = self.get_filter_attr('luk')
         deg_filter = self.get_filter_attr('deg')
         lvl_filter = self.get_filter_attr('lvl')
-        return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
-                                                             equippable=self._equippable,
-                                                             delta=self._delta,
-                                                             strength=att_filter,
-                                                             charisma=cha_filter,
-                                                             intelligence=int_filter,
-                                                             dexterity=dex_filter,
-                                                             luck=luk_filter,
-                                                             degrade=deg_filter,
-                                                             level=lvl_filter)
+        if for_sell:
+            return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities,
+                                                                       equippable=self._equippable,
+                                                                       delta=self._delta,
+                                                                       strength=att_filter,
+                                                                       charisma=cha_filter,
+                                                                       intelligence=int_filter,
+                                                                       dexterity=dex_filter,
+                                                                       luck=luk_filter,
+                                                                       degrade=deg_filter,
+                                                                       level=lvl_filter)
+        else:
+            return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
+                                                                 equippable=self._equippable,
+                                                                 delta=self._delta,
+                                                                 strength=att_filter,
+                                                                 charisma=cha_filter,
+                                                                 intelligence=int_filter,
+                                                                 dexterity=dex_filter,
+                                                                 luck=luk_filter,
+                                                                 degrade=deg_filter,
+                                                                 level=lvl_filter)
 
     async def do_change_source(self, interaction):
         balance = self._c.get_higher_balance()
         backpack_items = await self.get_backpack_items()
         include_sets = Rarities.set in self._rarities
-        await self.change_source(source=PrettyBackpackSource(backpack_items, balance, include_sets, self._sold_count, self._sold_price),
-                                 interaction=interaction)
+        await self.change_source(
+            source=PrettyBackpackSource(backpack_items, balance, include_sets, self._sold_count, self._sold_price),
+            interaction=interaction)
 
     async def navigate_page(self, interaction, button):
         try:
@@ -1218,8 +1239,10 @@ class InteractiveBackpackMenu(BaseMenu):
         kwargs = await button.view._get_kwargs_from_page(page)
         await interaction.response.edit_message(**kwargs)
 
+
 class InteractiveBackpackFilterModal(discord.ui.Modal):
-    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context, title, input_mapping: Dict[str, str]):
+    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context, title,
+                 input_mapping: Dict[str, str]):
         super().__init__(title=title)
         self.ctx = ctx
         self.backpack_menu = backpack_menu
@@ -1230,7 +1253,7 @@ class InteractiveBackpackFilterModal(discord.ui.Modal):
         keys = []
         for (key, value) in input_mapping.items():
             built_input = self.build_input(key.upper(), value)
-            item = { 'value': value, 'input': built_input}
+            item = {'value': value, 'input': built_input}
             self.__setattr__(key, item)
             keys.append(key)
             self.add_item(built_input)
