@@ -104,14 +104,14 @@ class Item:
             rarity_multiplier = max(min(self.rarity.value, 5), 1)
             mult = 1 + (rarity_multiplier / 10)
             positive_stats = (
-                sum([i for i in [self.att, self.int, self.cha, self.dex, self.luck] if i > 0])
-                * mult
-                * (1.7 if self.slot is Slot.two_handed else 1)
+                    sum([i for i in [self.att, self.int, self.cha, self.dex, self.luck] if i > 0])
+                    * mult
+                    * (1.7 if self.slot is Slot.two_handed else 1)
             )
             negative_stats = (
-                sum([i for i in [self.att, self.int, self.cha, self.dex, self.luck] if i < 0])
-                / 2
-                * (1.7 if self.slot is Slot.two_handed else 1)
+                    sum([i for i in [self.att, self.int, self.cha, self.dex, self.luck] if i < 0])
+                    / 2
+                    * (1.7 if self.slot is Slot.two_handed else 1)
             )
             lvl = positive_stats + negative_stats
         return max(int(lvl), 1)
@@ -665,7 +665,7 @@ class Character:
                 f"{int_space}{inter:<3} |"
                 f"{dex_space}{dex:<3} |"
                 f"{luck_space}{luck:<3} )"
-                f" | Lvl { self.equip_level(item):<5}"
+                f" | Lvl {self.equip_level(item):<5}"
                 f"{owned}{settext}"
             )
 
@@ -794,15 +794,15 @@ class Character:
         return tables
 
     async def get_backpack(
-        self,
-        forging: bool = False,
-        consumed=None,
-        rarity: Optional[Rarities] = None,
-        slot: Optional[Slot] = None,
-        show_delta=False,
-        equippable=False,
-        set_name: Optional[str] = None,
-        clean: bool = False,
+            self,
+            forging: bool = False,
+            consumed=None,
+            rarity: Optional[Rarities] = None,
+            slot: Optional[Slot] = None,
+            show_delta=False,
+            equippable=False,
+            set_name: Optional[str] = None,
+            clean: bool = False,
     ):
         if consumed is None:
             consumed = []
@@ -867,24 +867,24 @@ class Character:
         return await self.make_backpack_tables(rows, msg)
 
     async def get_sorted_backpack_arg_parse(
-        self,
-        backpack: dict,
-        slots: List[Slot],
-        rarities: List[Rarities],
-        sets: List[str],
-        equippable: bool,
-        _except: bool,
-        strength: MutableMapping[str, Any],
-        intelligence: MutableMapping[str, Any],
-        charisma: MutableMapping[str, Any],
-        luck: MutableMapping[str, Any],
-        dexterity: MutableMapping[str, Any],
-        level: MutableMapping[str, Any],
-        degrade: MutableMapping[str, Any],
-        ignore_case: bool,
-        match: Optional[str],
-        no_match: Optional[str],
-        rarity_exclude: List[str] = None,
+            self,
+            backpack: dict,
+            slots: List[Slot],
+            rarities: List[Rarities],
+            sets: List[str],
+            equippable: bool,
+            _except: bool,
+            strength: MutableMapping[str, Any],
+            intelligence: MutableMapping[str, Any],
+            charisma: MutableMapping[str, Any],
+            luck: MutableMapping[str, Any],
+            dexterity: MutableMapping[str, Any],
+            level: MutableMapping[str, Any],
+            degrade: MutableMapping[str, Any],
+            ignore_case: bool,
+            match: Optional[str],
+            no_match: Optional[str],
+            rarity_exclude: List[str] = None,
     ):
         tmp = {}
 
@@ -1166,9 +1166,125 @@ class Character:
             tables.append(box(msg + str(table) + f"\nPage {len(tables) + 1}", lang="ansi"))
         return tables
 
-    async def get_argparse_backpack_items(
-        self, query: MutableMapping[str, Any], rarity_exclude: List[str] = None
+    async def get_argparse_backpack_no_format(
+            self,
+            rarities: List[Rarities] = None,
+            slots: List[Slot] = None,
+            equippable: bool = False,
+            delta: bool = False,
+            strength: MutableMapping[str, Any] = None,
+            intelligence: MutableMapping[str, Any] = None,
+            charisma: MutableMapping[str, Any] = None,
+            luck: MutableMapping[str, Any] = None,
+            dexterity: MutableMapping[str, Any] = None,
+            level: MutableMapping[str, Any] = None,
+            degrade: MutableMapping[str, Any] = None
+    ) -> List[dict]:
+        rarities = [i for i in Rarities] if rarities is None else rarities
+        slots = [i for i in Slot] if slots is None else slots
+        strength = {} if strength is None else strength
+        intelligence = {} if intelligence is None else intelligence
+        charisma = {} if charisma is None else charisma
+        luck = {} if luck is None else luck
+        dexterity = {} if dexterity is None else dexterity
+        level = {} if level is None else level
+        degrade = {} if degrade is None else degrade
+
+        bkpk = await self.get_sorted_backpack_arg_parse(
+            self.backpack,
+            slots=slots,
+            rarities=rarities,
+            sets=[],
+            equippable=equippable,
+            strength=strength,
+            intelligence=intelligence,
+            charisma=charisma,
+            luck=luck,
+            dexterity=dexterity,
+            level=level,
+            degrade=degrade,
+            _except=False,
+            ignore_case=False,
+            match=None,
+            no_match=None
+        )
+
+        results = []
+        async for slot_name, slot_group in AsyncIter(bkpk, steps=100):
+            slot_name_org = slot_group[0][1].slot
+            current_equipped = getattr(self, slot_name_org.name, None)
+            async for item_name, item in AsyncIter(slot_group, steps=100):
+                if delta:
+                    att = self.get_equipped_delta(current_equipped, item, "att")
+                    cha = self.get_equipped_delta(current_equipped, item, "cha")
+                    int = self.get_equipped_delta(current_equipped, item, "int")
+                    dex = self.get_equipped_delta(current_equipped, item, "dex")
+                    luck = self.get_equipped_delta(current_equipped, item, "luck")
+                else:
+                    att = item.att if slot_name_org is not Slot.two_handed else item.att * 2
+                    cha = item.cha if slot_name_org is not Slot.two_handed else item.cha * 2
+                    int = item.int if slot_name_org is not Slot.two_handed else item.int * 2
+                    dex = item.dex if slot_name_org is not Slot.two_handed else item.dex * 2
+                    luck = item.luck if slot_name_org is not Slot.two_handed else item.luck * 2
+                item_level = self.equip_level(item)
+                cannot_equip = item_level > self.lvl
+                i_data = {"name": item.name, "slot": slot_name, "att": att, "cha": cha, "int": int, "dex": dex,
+                          "luck": luck, "owned": item.owned, "degrade": item.degrade, "rarity": item.rarity,
+                          "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
+                results.append(i_data)
+        return results
+
+    async def get_argparse_backpack_no_format_items(
+            self,
+            rarities: List[Rarities] = None,
+            slots: List[Slot] = None,
+            equippable: bool = False,
+            delta: bool = False,
+            strength: MutableMapping[str, Any] = None,
+            intelligence: MutableMapping[str, Any] = None,
+            charisma: MutableMapping[str, Any] = None,
+            luck: MutableMapping[str, Any] = None,
+            dexterity: MutableMapping[str, Any] = None,
+            level: MutableMapping[str, Any] = None,
+            degrade: MutableMapping[str, Any] = None
     ) -> List[Item]:
+        rarities = [i for i in Rarities] if rarities is None else rarities
+        slots = [i for i in Slot] if slots is None else slots
+        strength = {} if strength is None else strength
+        intelligence = {} if intelligence is None else intelligence
+        charisma = {} if charisma is None else charisma
+        luck = {} if luck is None else luck
+        dexterity = {} if dexterity is None else dexterity
+        level = {} if level is None else level
+        degrade = {} if degrade is None else degrade
+
+        bkpk = await self.get_sorted_backpack_arg_parse(
+            self.backpack,
+            slots=slots,
+            rarities=rarities,
+            sets=[],
+            equippable=equippable,
+            strength=strength,
+            intelligence=intelligence,
+            charisma=charisma,
+            luck=luck,
+            dexterity=dexterity,
+            level=level,
+            degrade=degrade,
+            _except=False,
+            ignore_case=False,
+            match=None,
+            no_match=None
+        )
+
+        results = []
+        async for slot_name, slot_group in AsyncIter(bkpk, steps=100):
+            async for item_name, item in AsyncIter(slot_group, steps=100):
+                results.append(item)
+        return results
+
+    async def get_argparse_backpack_items(self, query: MutableMapping[str, Any], rarity_exclude: List[str] = None) -> \
+    List[Item]:
         equippable = query.pop("equippable", False)
         sets = query.pop("set", [])
         rarities = query.pop("rarity", [])
@@ -1341,11 +1457,11 @@ class Character:
 
     @classmethod
     async def from_json(
-        cls,
-        ctx: commands.Context,
-        config: Config,
-        user: Union[discord.Member, discord.User],
-        daily_bonus_mapping: Dict[str, float],
+            cls,
+            ctx: commands.Context,
+            config: Config,
+            user: Union[discord.Member, discord.User],
+            daily_bonus_mapping: Dict[str, float],
     ):
         """Return a Character object from config and user."""
         data = await config.user(user).all()
@@ -1599,6 +1715,7 @@ class Character:
             "last_known_currency": 0,
             "last_currency_check": 0,
         }
+
 
 async def calculate_sp(lvl_end: int, c: Character):
     points_300 = lvl_end - 300 if lvl_end >= 300 else 0

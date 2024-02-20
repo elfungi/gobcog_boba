@@ -10,10 +10,13 @@ from redbot.core.utils.chat_formatting import escape, humanize_number
 from redbot.vendored.discord.ext import menus
 
 from .bank import bank
+from .charsheet import Character
+from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours, Slot
 
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure.menus")
 
+SELL_CONFIRM_AMOUNT = -420
 
 class LeaderboardSource(menus.ListPageSource):
     def __init__(self, entries: List[Tuple[int, Dict]]):
@@ -400,6 +403,108 @@ class EconomySource(menus.ListPageSource):
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")
 
         return embed
+
+
+class PrettyBackpackSource(menus.ListPageSource):
+    def __init__(self, entries: List[Dict], include_sets = True, sold_count = 0, sold_price = 0):
+        super().__init__(entries, per_page=10)
+        self._include_sets = include_sets
+        self._sold_count = sold_count
+        self._sold_price = sold_price
+        self._items_len = len(entries)
+
+    def is_paginating(self):
+        return True
+
+    async def format_page(self, menu: menus.MenuPages, entries: List[Dict]):
+        format_ansi = lambda text, ansi_code = ANSITextColours.white: f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
+        ctx = menu.ctx
+        name_len = 64
+        slot_len = 14
+        attr_len = 5
+        set_len = 32
+        author = ctx.author
+        start_position = (menu.current_page * self.per_page) + 1
+
+        header = (
+            f"{format_ansi('Name'):{name_len}}" # use ansi on this field to match spacing on table
+            f"{'Slot':{slot_len}}"
+            f"{'ATT':{attr_len}}"
+            f"{'CHA':{attr_len}}"
+            f"{'INT':{attr_len}}"
+            f"{'DEX':{attr_len}}"
+            f"{'QTY':{attr_len}}"
+            f"{'DEG':{attr_len}}"
+            f"{'LVL':{attr_len}}"
+        )
+        if self._include_sets:
+            header += f"{'  Set':{set_len}}"
+
+        data = []
+        for (i, item) in enumerate(entries, start=start_position):
+            name = item["name"]
+            slot = item["slot"]
+            level = item["lvl"]
+            att = item["att"]
+            cha = item["cha"]
+            _int = item["int"]
+            dex = item["dex"]
+            owned = item["owned"]
+            degrade = item["degrade"]
+            _set = item["set"]
+            rarity = item["rarity"]
+            cannot_equip = item["cannot_equip"]
+
+            deg_value = degrade if rarity in [Rarities.legendary, Rarities.event, Rarities.ascended] and degrade >= 0 else ""
+            set_value = _set if rarity in [Rarities.set] else ""
+
+            ansi_name = rarity.as_ansi(name)
+            level_value = format_ansi(level, ANSITextColours.red) if cannot_equip else format_ansi(level)
+            i_data = (
+                f"{ansi_name:{name_len}}"
+                f"{slot:{slot_len}}"
+                f"{str(att):{attr_len}}"
+                f"{str(cha):{attr_len}}"
+                f"{str(_int):{attr_len}}"
+                f"{str(dex):{attr_len}}"
+                f"{str(owned):{attr_len}}"
+                f"{str(deg_value):{attr_len}}"
+                f"{level_value:{attr_len}}"
+            )
+            if self._include_sets:
+                i_data += f"     {set_value:{set_len}}"
+            data.append(i_data)
+
+        # push at least 1 empty item on to make formatting not messed up
+        if len(data) == 0:
+            no_content = "There doesn't seem to be anything here..."
+            msg = "```{}'s Backpack``````ansi\n{}``````md\n{}```".format(
+                author,
+                header,
+                no_content
+            )
+        else:
+            msg = "```{}'s Backpack``````ansi\n{}``````ansi\n{}``````ansi\n{}```".format(
+                author,
+                header,
+                "\n".join(data),
+                f"Page {menu.current_page + 1}/{self.get_max_pages()}"
+            )
+        if self._sold_count > 0:
+            msg += "```md\n* {} item(s) sold for {}.```".format(
+                self._sold_count,
+                humanize_number(self._sold_price)
+            )
+        elif self._sold_count == -1:
+            msg += "```md\n* You tried to go sell your items but the monster ahead is not allowing you to leave.```".format(
+                self._sold_count,
+                humanize_number(self._sold_price)
+            )
+        elif self._sold_count == SELL_CONFIRM_AMOUNT:
+            msg += "```md\n* Are you sure you want to sell these {} listings and their copies? Press the confirm button to proceed.```".format(
+                humanize_number(self._items_len)
+            )
+        return msg
 
 
 class StopButton(discord.ui.Button):
@@ -857,3 +962,194 @@ class BackpackMenu(BaseMenu):
         self.stop()
         await interaction.response.defer()
         await self.on_timeout()
+
+
+class InteractiveBackpackMenu(BaseMenu):
+    def __init__(
+            self,
+            source,
+            c: Character,
+            sell_callback: Any,
+            clear_reactions_after: bool = True,
+            delete_message_after: bool = False,
+            timeout: int = 180,
+            message: discord.Message = None,
+            **kwargs: Any
+    ) -> None:
+        super().__init__(
+            source=source,
+            clear_reactions_after=clear_reactions_after,
+            delete_message_after=delete_message_after,
+            timeout=timeout,
+            message=message,
+            **kwargs
+        )
+        self._c = c
+        self._sell_callback = sell_callback
+        self._current_view = ""
+        self._rarities = []
+        self._equippable = False
+        self._delta = False
+        self._sold_count = 0
+        self._sold_price = 0
+        self.initial_state()
+        # remove useless buttons from parents
+        self.remove_item(self.stop_button)
+        self.remove_item(self.last_button)
+        self.remove_item(self.first_button)
+        self.remove_item(self.forward_button)
+        self.remove_item(self.backward_button)
+
+    def initial_state(self):
+        self._current_view = "default"
+        self._rarities = [i for i in Rarities]
+        self._equippable = False
+        self._delta = False
+        self._sold_count = 0
+        self._sold_price = 0
+
+    async def update(self):
+        view_buttons = {
+            "default": self.default_button,
+            "can_equip": self.can_equip_button
+        }
+        for button in view_buttons.values():
+            button.disabled = False
+        view_buttons[self._current_view].disabled = True
+
+        rarity_buttons = {
+            Rarities.normal: self.normal_filter,
+            Rarities.epic: self.epic_filter,
+            Rarities.legendary: self.legendary_filter,
+            Rarities.ascended: self.ascended_filter,
+            Rarities.set: self.set_filter
+        }
+        for r in [Rarities.normal, Rarities.epic, Rarities.legendary, Rarities.ascended, Rarities.set]:
+            if r in self._rarities:
+                rarity_buttons[r].style = discord.ButtonStyle.green
+            else:
+                rarity_buttons[r].style = discord.ButtonStyle.gray
+
+        if self._sold_count == SELL_CONFIRM_AMOUNT:
+            self.confirm_sell.disabled = False
+            self.confirm_sell.style = discord.ButtonStyle.red
+        else:
+            self.confirm_sell.disabled = True
+            self.confirm_sell.style = discord.ButtonStyle.grey
+
+    @discord.ui.button(style=discord.ButtonStyle.red, emoji = "\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", row=1)
+    async def _stop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        button.view.stop()
+        if interaction.message.flags.ephemeral:
+            await interaction.response.edit_message(view=None)
+            return
+        await interaction.message.delete()
+
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+    async def _back_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        button.view.current_page -= 1 if button.view.current_page > 0 else 0
+        await self.navigate_page(interaction, button)
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, emoji = "\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+    async def _forward_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        max_pages = self.source.get_max_pages()
+        if button.view.current_page + 1 < max_pages:
+            button.view.current_page += 1
+        await self.navigate_page(interaction, button)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Sell All", row=1)
+    async def sell_all_in_view(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._sold_count = SELL_CONFIRM_AMOUNT
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Confirm", disabled=True, row=1)
+    async def confirm_sell(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        backpack_items = await self.get_backpack_item_for_sell()
+        count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
+        self._sold_count = count
+        self._sold_price = amount
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Normal + Rare", row=2)
+    async def normal_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.update_rarities(Rarities.normal)
+        self.update_rarities(Rarities.rare)
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Epic", row=2)
+    async def epic_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.update_rarities(Rarities.epic)
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Legendary", row=2)
+    async def legendary_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.update_rarities(Rarities.legendary)
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Ascended", row=2)
+    async def ascended_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.update_rarities(Rarities.ascended)
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Set", row=2)
+    async def set_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.update_rarities(Rarities.set)
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="Default", row=3)
+    async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._current_view = "default"
+        self._equippable = False
+        self._delta = False
+        self.reset_sell()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="Can Equip", row=3)
+    async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._current_view = "can_equip"
+        self._equippable = True
+        self._delta = True
+        self.reset_sell()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="Clear", row=3)
+    async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Reset", row=3)
+    async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.initial_state()
+        await self.do_change_source(interaction)
+
+    def update_rarities(self, rarity):
+        self.reset_sell()
+        if rarity in self._rarities:
+            self._rarities.remove(rarity)
+        else:
+            self._rarities.append(rarity)
+
+    def reset_sell(self):
+        self._sold_count = 0
+        self._sold_price = 0
+
+    async def get_backpack_item_for_sell(self):
+        return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities, equippable=self._equippable, delta=self._delta)
+
+    async def get_backpack_items(self):
+        return await self._c.get_argparse_backpack_no_format(rarities=self._rarities, equippable=self._equippable, delta=self._delta)
+
+    async def do_change_source(self, interaction):
+        backpack_items = await self.get_backpack_items()
+        include_sets = Rarities.set in self._rarities
+        await self.change_source(source=PrettyBackpackSource(backpack_items, include_sets, self._sold_count, self._sold_price), interaction=interaction)
+
+    async def navigate_page(self, interaction, button):
+        try:
+            page = await button.view.source.get_page(button.view.current_page)
+        except IndexError:
+            button.view.current_page = 0
+            page = await button.view.source.get_page(button.view.current_page)
+        kwargs = await button.view._get_kwargs_from_page(page)
+        await interaction.response.edit_message(**kwargs)

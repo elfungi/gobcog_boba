@@ -4,7 +4,7 @@ import contextlib
 import logging
 import random
 import time
-from typing import Optional
+from typing import Optional, List
 
 import discord
 from redbot.core import commands
@@ -26,7 +26,7 @@ from .converters import (
     SlotConverter,
 )
 from .helpers import ConfirmView, _sell, escape, is_dev, smart_embed
-from .menus import BackpackMenu, BaseMenu, SimpleSource
+from .menus import BackpackMenu, BaseMenu, SimpleSource, InteractiveBackpackMenu, PrettyBackpackSource
 
 _ = Translator("Adventure", __file__)
 
@@ -1010,3 +1010,60 @@ class BackPackCommands(AdventureMixin):
                     clear_reactions_after=True,
                     timeout=180,
                 ).start(ctx=ctx)
+
+
+    @commands.command(name="ibackpack")
+    @commands.bot_has_permissions(add_reactions=True)
+    async def commands_interactive_backpack(
+            self,
+            ctx: commands.Context
+    ):
+        """This shows an interactive backpack management view.
+        """
+        if not await self.allow_in_dm(ctx):
+            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+        if not ctx.invoked_subcommand:
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                return
+
+            backpack_items = await c.get_argparse_backpack_no_format()
+            await InteractiveBackpackMenu(
+                c=c,
+                sell_callback=self.interactive_sell_callback,
+                source=PrettyBackpackSource(backpack_items),
+                delete_message_after=True,
+                clear_reactions_after=True,
+                timeout=180
+            ).start(ctx=ctx)
+
+    async def interactive_sell_callback(self, ctx, character, items: List[Item]):
+        if self.in_adventure(ctx):
+            return -1, -1
+        else:
+            async with self.get_lock(ctx.author):
+                total_price = 0
+                items_sold = 0
+                async with ctx.typing():
+                    async for item in AsyncIter(items, steps=100):
+                        old_owned = item.owned
+                        item_price = 0
+                        async for _loop_counter in AsyncIter(range(0, old_owned), steps=100):
+                            item.owned -= 1
+                            item_price += _sell(character, item)
+                            if item.owned <= 0 and item.name in character.backpack:
+                                del character.backpack[item.name]
+                        item_price = max(item_price, 0)
+                        total_price += item_price
+                        items_sold += old_owned
+                    if total_price > 0:
+                        try:
+                            await bank.deposit_credits(ctx.author, total_price)
+                        except BalanceTooHigh as e:
+                            await bank.set_balance(ctx.author, e.max_balance)
+                    character.last_known_currency = await bank.get_balance(ctx.author)
+                    character.last_currency_check = time.time()
+                    await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
+                return items_sold, total_price
