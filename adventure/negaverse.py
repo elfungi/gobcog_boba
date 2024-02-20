@@ -163,12 +163,13 @@ class Negaverse(AdventureMixin):
                 roll = -2
             versus = random.randint(10, 60)
             xp_mod = random.randint(1, 5)
+            xp_rebirth_mod = random.randint(0, character.rebirths)
             daymult = self._daily_bonus.get(str(datetime.today().isoweekday()), 0)
             xp_won = int((offering / xp_mod))
             xp_to_max = int((character.maxlevel + 1) ** 3.5)
             ten_percent = xp_to_max * 0.1
             xp_won = ten_percent if xp_won > ten_percent else xp_won
-            xp_won = int(xp_won * (min(max(random.randint(0, character.rebirths), 1), 50) / 100 + 1))
+            xp_won = int(xp_won * (min(max(xp_rebirth_mod, 1), 50) / 100 + 1))
             xp_won = int(xp_won * (character.gear_set_bonus.get("xpmult", 1) + daymult))
             if roll == -2:
                 looted = ""
@@ -243,13 +244,16 @@ class Negaverse(AdventureMixin):
                 await nega_msg.edit(
                     content=_(
                         "{content}\n{author} decapitated {negachar}. "
-                        "You gain {xp_gain} xp and take "
+                        "You gain {xp_gain} xp [{dice}({xp_roll_1}), {dice}({xp_roll_2})] and take "
                         "{offering} {currency_name} back from the shadowy corpse."
                     ).format(
                         content=nega_msg.content,
                         author=bold(ctx.author.display_name),
                         negachar=bold(negachar),
                         xp_gain=humanize_number(xp_won),
+                        dice=self.emojis.dice,
+                        xp_roll_1=xp_mod,
+                        xp_roll_2=xp_rebirth_mod,
                         offering=humanize_number(offering),
                         currency_name=currency_name,
                     ),
@@ -268,7 +272,7 @@ class Negaverse(AdventureMixin):
                     content=_(
                         "{content}\n{author} "
                         "{dice}({roll}) bravely defeated {negachar} {dice}({versus}). "
-                        "You gain {xp_gain} xp."
+                        "You gain {xp_gain} xp [{dice}({xp_roll_1}), {dice}({xp_roll_2})]."
                     ).format(
                         dice=self.emojis.dice,
                         content=nega_msg.content,
@@ -277,6 +281,8 @@ class Negaverse(AdventureMixin):
                         negachar=bold(negachar),
                         versus=versus,
                         xp_gain=humanize_number(xp_won),
+                        xp_roll_1=xp_mod,
+                        xp_roll_2=xp_rebirth_mod
                     ),
                     view=None,
                 )

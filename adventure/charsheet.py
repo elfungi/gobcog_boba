@@ -1564,6 +1564,9 @@ class Character:
         hero_data["last_currency_check"] = data.get("last_currency_check", 0)
         return cls(**hero_data, ctx=ctx, daily_bonus_mapping=daily_bonus_mapping)
 
+    def get_higher_balance(self):
+        return max(self.bal, self.last_known_currency)
+
     def get_set_item_count(self):
         count_set = 0
         last_slot = ""

@@ -11,7 +11,8 @@ from redbot.vendored.discord.ext import menus
 
 from .bank import bank
 from .charsheet import Character
-from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours, Slot
+from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours
+from .converters import process_argparse_stat
 
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure.menus")
@@ -406,8 +407,9 @@ class EconomySource(menus.ListPageSource):
 
 
 class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], include_sets = True, sold_count = 0, sold_price = 0):
+    def __init__(self, entries: List[Dict], balance = 0, include_sets = True, sold_count = 0, sold_price = 0):
         super().__init__(entries, per_page=10)
+        self._balance = balance
         self._include_sets = include_sets
         self._sold_count = sold_count
         self._sold_price = sold_price
@@ -420,9 +422,9 @@ class PrettyBackpackSource(menus.ListPageSource):
         format_ansi = lambda text, ansi_code = ANSITextColours.white: f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
         ctx = menu.ctx
         name_len = 64
-        slot_len = 14
-        attr_len = 8
-        set_len = 32
+        slot_len = 8
+        attr_len = 6
+        set_len = 28
         author = ctx.author
         start_position = (menu.current_page * self.per_page) + 1
 
@@ -433,6 +435,7 @@ class PrettyBackpackSource(menus.ListPageSource):
             f"{'CHA':{attr_len}}"
             f"{'INT':{attr_len}}"
             f"{'DEX':{attr_len}}"
+            f"{'LUK':{attr_len}}"
             f"{'QTY':{attr_len}}"
             f"{'DEG':{attr_len}}"
             f"{'LVL':{attr_len}}"
@@ -443,12 +446,13 @@ class PrettyBackpackSource(menus.ListPageSource):
         data = []
         for (i, item) in enumerate(entries, start=start_position):
             name = item["name"]
-            slot = item["slot"]
+            slot = "2-Hand" if item["slot"] == "Two Handed" else item["slot"]
             level = item["lvl"]
             att = item["att"]
             cha = item["cha"]
             _int = item["int"]
             dex = item["dex"]
+            luk = item["luck"]
             owned = item["owned"]
             degrade = item["degrade"]
             _set = item["set"]
@@ -467,6 +471,7 @@ class PrettyBackpackSource(menus.ListPageSource):
                 f"{str(cha):{attr_len}}"
                 f"{str(_int):{attr_len}}"
                 f"{str(dex):{attr_len}}"
+                f"{str(luk):{attr_len}}"
                 f"{str(owned):{attr_len}}"
                 f"{str(deg_value):{attr_len}}"
                 f"{level_value:{attr_len}}"
@@ -475,21 +480,19 @@ class PrettyBackpackSource(menus.ListPageSource):
                 i_data += f"     {set_value:{set_len}}"
             data.append(i_data)
 
-        # push at least 1 empty item on to make formatting not messed up
+
+        msg = "```{}'s Backpack - {} gold```".format(author, humanize_number(self._balance))
+        msg += "```ansi\n{}```".format(header)
+
         if len(data) == 0:
             no_content = "There doesn't seem to be anything here..."
-            msg = "```{}'s Backpack``````ansi\n{}``````md\n{}```".format(
-                author,
-                header,
-                no_content
-            )
+            msg += "```md\n{}```".format(no_content)
         else:
-            msg = "```{}'s Backpack``````ansi\n{}``````ansi\n{}``````ansi\n{}```".format(
-                author,
-                header,
+            msg += "```ansi\n{}``````ansi\n{}```".format(
                 "\n".join(data),
                 f"Page {menu.current_page + 1}/{self.get_max_pages()}"
             )
+
         if self._sold_count > 0:
             msg += "```md\n* {} item(s) sold for {}.```".format(
                 self._sold_count,
@@ -504,6 +507,7 @@ class PrettyBackpackSource(menus.ListPageSource):
             msg += "```md\n* Are you sure you want to sell these {} listings and their copies? Press the confirm button to proceed.```".format(
                 humanize_number(self._items_len)
             )
+
         return msg
 
 
@@ -988,6 +992,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._sell_callback = sell_callback
         self._current_view = ""
         self._rarities = []
+        self._stats = self.initial_stats_filters()
         self._equippable = False
         self._delta = False
         self._sold_count = 0
@@ -1003,10 +1008,28 @@ class InteractiveBackpackMenu(BaseMenu):
     def initial_state(self):
         self._current_view = "default"
         self._rarities = [i for i in Rarities]
+        self._stats = self.initial_stats_filters()
         self._equippable = False
         self._delta = False
         self._sold_count = 0
         self._sold_price = 0
+
+    def initial_stats_filters(self):
+        return {
+            'att': None,
+            'cha': None,
+            'int': None,
+            'dex': None,
+            'luk': None,
+            'deg': None,
+            'lvl': None
+        }
+
+    def set_stat_filter(self, attr, value):
+        if value:
+            self._stats[attr] = [value]
+        else:
+            self._stats[attr] = None
 
     async def update(self):
         view_buttons = {
@@ -1045,7 +1068,6 @@ class InteractiveBackpackMenu(BaseMenu):
             return
         await interaction.message.delete()
 
-
     @discord.ui.button(style=discord.ButtonStyle.grey, emoji = "\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
     async def _back_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         button.view.current_page -= 1 if button.view.current_page > 0 else 0
@@ -1058,12 +1080,12 @@ class InteractiveBackpackMenu(BaseMenu):
             button.view.current_page += 1
         await self.navigate_page(interaction, button)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Sell All", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Sell All \u200b \u200b", row=1)
     async def sell_all_in_view(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._sold_count = SELL_CONFIRM_AMOUNT
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Confirm", disabled=True, row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Confirm \u200b \u200b", disabled=True, row=1)
     async def confirm_sell(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         backpack_items = await self.get_backpack_item_for_sell()
         count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
@@ -1082,7 +1104,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self.update_rarities(Rarities.epic)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Legendary", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="\u200b \u200b Legendary \u200b", row=2)
     async def legendary_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.legendary)
         await self.do_change_source(interaction)
@@ -1097,7 +1119,29 @@ class InteractiveBackpackMenu(BaseMenu):
         self.update_rarities(Rarities.set)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, label="Default", row=3)
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="Stat Filters", row=3)
+    async def filter_group_1(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'}}
+        modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 1", input_mapping)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="Deg/Lvl Filters", row=3)
+    async def filter_group_2(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'deg', 'lvl'}}
+        modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 2", input_mapping)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Clear Rarity \u200b \u200b", row=3)
+    async def clear_rarity(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Clear Filters\u200b \u200b", row=3)
+    async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._stats = self.initial_stats_filters()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b \u200b \u200b Default \u200b \u200b \u200b", row=4)
     async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "default"
         self._equippable = False
@@ -1105,7 +1149,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, label="Can Equip", row=3)
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b \u200b \u200b \u200b Can Equip \u200b \u200b \u200b \u200b", row=4)
     async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "can_equip"
         self._equippable = True
@@ -1113,12 +1157,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.grey, label="Clear", row=3)
-    async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
-        await self.do_change_source(interaction)
-
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Reset", row=3)
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b", row=4)
     async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.initial_state()
         await self.do_change_source(interaction)
@@ -1137,13 +1176,38 @@ class InteractiveBackpackMenu(BaseMenu):
     async def get_backpack_item_for_sell(self):
         return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities, equippable=self._equippable, delta=self._delta)
 
+    def get_filter_attr(self, attr):
+        value = self._stats[attr]
+        if value is not None:
+            return process_argparse_stat(self._stats, attr)[attr]
+        else:
+            return None
+
     async def get_backpack_items(self):
-        return await self._c.get_argparse_backpack_no_format(rarities=self._rarities, equippable=self._equippable, delta=self._delta)
+        att_filter = self.get_filter_attr('att')
+        cha_filter = self.get_filter_attr('cha')
+        int_filter = self.get_filter_attr('int')
+        dex_filter = self.get_filter_attr('dex')
+        luk_filter = self.get_filter_attr('luk')
+        deg_filter = self.get_filter_attr('deg')
+        lvl_filter = self.get_filter_attr('lvl')
+        return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
+                                                             equippable=self._equippable,
+                                                             delta=self._delta,
+                                                             strength=att_filter,
+                                                             charisma=cha_filter,
+                                                             intelligence=int_filter,
+                                                             dexterity=dex_filter,
+                                                             luck=luk_filter,
+                                                             degrade=deg_filter,
+                                                             level=lvl_filter)
 
     async def do_change_source(self, interaction):
+        balance = self._c.get_higher_balance()
         backpack_items = await self.get_backpack_items()
         include_sets = Rarities.set in self._rarities
-        await self.change_source(source=PrettyBackpackSource(backpack_items, include_sets, self._sold_count, self._sold_price), interaction=interaction)
+        await self.change_source(source=PrettyBackpackSource(backpack_items, balance, include_sets, self._sold_count, self._sold_price),
+                                 interaction=interaction)
 
     async def navigate_page(self, interaction, button):
         try:
@@ -1153,3 +1217,40 @@ class InteractiveBackpackMenu(BaseMenu):
             page = await button.view.source.get_page(button.view.current_page)
         kwargs = await button.view._get_kwargs_from_page(page)
         await interaction.response.edit_message(**kwargs)
+
+class InteractiveBackpackFilterModal(discord.ui.Modal):
+    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context, title, input_mapping: Dict[str, str]):
+        super().__init__(title=title)
+        self.ctx = ctx
+        self.backpack_menu = backpack_menu
+        self.keys = []
+        self.build_inputs(input_mapping)
+
+    def build_inputs(self, input_mapping):
+        keys = []
+        for (key, value) in input_mapping.items():
+            built_input = self.build_input(key.upper(), value)
+            item = { 'value': value, 'input': built_input}
+            self.__setattr__(key, item)
+            keys.append(key)
+            self.add_item(built_input)
+        self.keys = keys
+
+    async def on_submit(self, interaction: discord.Interaction):
+        for key in self.keys:
+            item = self.__getattribute__(key)
+            value = item['input'].value
+            self.backpack_menu.set_stat_filter(key, value)
+        await self.backpack_menu.do_change_source(interaction)
+
+    def build_input(self, label, value):
+        v = value[0] if value and len(value) > 0 else None
+        return discord.ui.TextInput(
+            label=label,
+            placeholder="e.g. >10, <100",
+            default=v,
+            style=discord.TextStyle.short,
+            max_length=20,
+            min_length=0,
+            required=False
+        )
