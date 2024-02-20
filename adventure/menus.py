@@ -421,7 +421,7 @@ class PrettyBackpackSource(menus.ListPageSource):
         ctx = menu.ctx
         name_len = 64
         slot_len = 14
-        attr_len = 5
+        attr_len = 8
         set_len = 32
         author = ctx.author
         start_position = (menu.current_page * self.per_page) + 1
