@@ -1033,7 +1033,7 @@ class BackPackCommands(AdventureMixin):
             await InteractiveBackpackMenu(
                 c=c,
                 sell_callback=self.interactive_sell_callback,
-                source=PrettyBackpackSource(backpack_items),
+                source=PrettyBackpackSource(backpack_items, c.get_higher_balance()),
                 delete_message_after=True,
                 clear_reactions_after=True,
                 timeout=180

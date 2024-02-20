@@ -589,6 +589,37 @@ class SpecialActionButton(discord.ui.Button):
                 await self.send_music(interaction, c)
 
 
+class ActionListButton(discord.ui.Button):
+    def __init__(
+            self,
+            style: discord.ButtonStyle,
+            row: Optional[int] = None,
+    ):
+        super().__init__(label="Action List", style=style, row=row)
+        self.style = style
+        self.action_type = "hit_list"
+        self.label_name = "Action List"
+
+    def build_user_action_list_msg(self, prefix, users):
+        result = []
+        for user in users:
+            result.append(user.global_name)
+        return "" if len(result) == 0 else prefix + ": " + ", ".join(result)
+
+    async def callback(self, interaction: discord.Interaction):
+        attack_list_str = self.build_user_action_list_msg("Attacking", self.view.fight)
+        talk_list_str = self.build_user_action_list_msg("Talking", self.view.talk)
+        magic_list_str = self.build_user_action_list_msg("Casting", self.view.magic)
+        pray_list_str = self.build_user_action_list_msg("Praying", self.view.pray)
+        run_list_str = self.build_user_action_list_msg("Running", self.view.run)
+
+        msg = "\n".join(filter(None, [attack_list_str, talk_list_str, magic_list_str, pray_list_str, run_list_str]))
+        if len(msg) == 0:
+            await interaction.response.send_message(box('No one has taken any action! Lazy bums.', lang="ansi"), ephemeral=True)
+        else:
+            await interaction.response.send_message(box(msg, lang="ansi"), ephemeral=True)
+
+
 class GameSession(discord.ui.View):
     """A class to represent and hold current game sessions per server."""
 
@@ -654,12 +685,14 @@ class GameSession(discord.ui.View):
         self.pray_button = PrayButton(discord.ButtonStyle.grey)
         self.run_button = RunButton(discord.ButtonStyle.grey)
         self.special_button = SpecialActionButton(discord.ButtonStyle.blurple)
+        self.action_list_button = ActionListButton(discord.ButtonStyle.green)
         self.add_item(self.attack_button)
         self.add_item(self.talk_button)
         self.add_item(self.magic_button)
         self.add_item(self.pray_button)
         self.add_item(self.run_button)
         self.add_item(self.special_button)
+        self.add_item(self.action_list_button)
 
     async def update(self):
         self.attack_button.label = self.attack_button.label_name.format(f"({len(self.fight)})")

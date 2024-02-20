@@ -76,6 +76,9 @@ Preferred stat: INT
 * Check the backpack. Use `[p]ebackpack` to only show items that you can equip at that time. Use `[p]cbackpack` for complex argparse-based backpack management - see `[p]help cbackpack` to see how to use this command.
 * Use `[p]help backpack` to see a list of useful backpack management subcommands, including player item trading.
 
+`[p]ibackpack`
+* An interactive backpack tool to filter and sell items. Provides most of the basic functionality you would normally use, but more advance users can still use some of the richer functionality of `[p]backpack` and `[p]cbackpack`.
+
 `[p]equip` / `[p]unequip`
 * Equip/Unequip items by using the item name with the command
 
