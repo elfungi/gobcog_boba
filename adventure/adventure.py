@@ -2558,14 +2558,16 @@ class Adventure(
             else:
                 rarity = Rarities.legendary  # 45% to roll legendary
         elif chest_type is Rarities.pet:
-            if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll legendary
+            if roll <= INITIAL_MAX_ROLL * 0.02:  # 2% to roll ascended
+                rarity = Rarities.ascended
+            elif roll <= INITIAL_MAX_ROLL * 0.17:  # 15% to roll legendary
                 rarity = Rarities.legendary
-            elif roll <= INITIAL_MAX_ROLL * 0.15:  # 10% to roll epic
+            elif roll <= INITIAL_MAX_ROLL * 0.52:  # 35% to roll epic
                 rarity = Rarities.epic
-            elif roll <= INITIAL_MAX_ROLL * 0.57:  # 42% to roll rare
+            elif roll <= INITIAL_MAX_ROLL * 0.87:  # 35% to roll rare
                 rarity = Rarities.rare
             else:
-                rarity = Rarities.normal  # 47% to roll common
+                rarity = Rarities.normal  # 13% to roll common
         elif chest_type is Rarities.set:
             if roll <= INITIAL_MAX_ROLL * 0.55:  # 55% to roll set
                 rarity = Rarities.set
@@ -2625,9 +2627,9 @@ class Adventure(
             usercp = int(base_usercp * (c.gear_set_bonus.get("cpmult", 1) + daymult))
             newxp += userxp
             newcp += usercp
-            # bonus roll for rangers - 20% base chance to proc + 1% every 100 charisma
+            # bonus roll for rangers - 45% base chance to proc + 1% every 20 charisma
             roll = random.randint(1, 100)
-            target_number = 20 + int(c.total_cha / 100)
+            target_number = 45 + int(c.total_cha / 20)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
                 roll = 1  # pick 1 to guarantee bonus if pet allows it
             if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
