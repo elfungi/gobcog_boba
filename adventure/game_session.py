@@ -603,7 +603,7 @@ class ActionListButton(discord.ui.Button):
     def build_user_action_list_msg(self, prefix, users):
         result = []
         for user in users:
-            result.append(user.global_name)
+            result.append(user.display_name)
         return "" if len(result) == 0 else prefix + ": " + ", ".join(result)
 
     async def callback(self, interaction: discord.Interaction):

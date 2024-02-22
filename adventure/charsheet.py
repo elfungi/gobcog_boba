@@ -534,7 +534,7 @@ class Character:
         hc = None
         if self.heroclass != {} and "name" in self.heroclass:
             hc = self.hc
-            class_desc = self.hc.class_name + "\n\n" + self.hc.desc()
+            class_desc = self.hc.class_rank_name(self.rebirths) + "\n\n" + self.hc.desc()
             if self.hc is HeroClasses.ranger:
                 if not self.heroclass["pet"]:
                     class_desc += _("\n\n- Current pet: [None]")
@@ -1178,7 +1178,8 @@ class Character:
             luck: MutableMapping[str, Any] = None,
             dexterity: MutableMapping[str, Any] = None,
             level: MutableMapping[str, Any] = None,
-            degrade: MutableMapping[str, Any] = None
+            degrade: MutableMapping[str, Any] = None,
+            match: Optional[str] = None
     ) -> List[dict]:
         rarities = [i for i in Rarities] if rarities is None else rarities
         slots = [i for i in Slot] if slots is None else slots
@@ -1204,8 +1205,8 @@ class Character:
             level=level,
             degrade=degrade,
             _except=False,
-            ignore_case=False,
-            match=None,
+            ignore_case=True,
+            match=match,
             no_match=None
         )
 
@@ -1246,7 +1247,8 @@ class Character:
             luck: MutableMapping[str, Any] = None,
             dexterity: MutableMapping[str, Any] = None,
             level: MutableMapping[str, Any] = None,
-            degrade: MutableMapping[str, Any] = None
+            degrade: MutableMapping[str, Any] = None,
+            match: Optional[str] = None
     ) -> List[Item]:
         rarities = [i for i in Rarities] if rarities is None else rarities
         slots = [i for i in Slot] if slots is None else slots
@@ -1273,7 +1275,7 @@ class Character:
             degrade=degrade,
             _except=False,
             ignore_case=False,
-            match=None,
+            match=match,
             no_match=None
         )
 
