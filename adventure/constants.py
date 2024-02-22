@@ -538,7 +538,7 @@ class HeroClasses(Enum):
                 # psychics start at 20 min
                 return _("Veteran {}").format(self.class_name)
         else:
-            return self.class_name()
+            return self.class_name
 
     @property
     def class_colour(self) -> ANSITextColours:
