@@ -16,8 +16,9 @@ To start an adventure, use `[p]adventure` or `[p]a`. Reactions will appear under
 
 ## Hero/Heroclass
 
-Classes can be chosen at level 10 by using `[p]heroclass`. Available classes are Tinkerer, Berserker, Wizard, Cleric, Ranger and Bard. A prestige class called Psychic is available at Rebirth level 20 (more on the rebirthing system below).  
-  
+Classes can be chosen at level 10 by using `[p]heroclass`. Available classes are Tinkerer, Berserker, Wizard, Cleric, Ranger and Bard.  
+At rebirth level 20, each heroclass unlocks their Veteran rank, and the Pyschic heroclass is unlocked (more on the rebirthing system below).
+
 Main Stats: Attack (ATT/ATK), Charisma/Diplomacy (CHA/DIPL), Intelligence (INT)  
 Minor Stats: Dexterity (DEX), Luck (LUCK/LUK)  
   
@@ -26,42 +27,54 @@ While each class has a main stat that benefits them more than others, Dexterity 
 **Tinkerers** can forge two different items into a device bound to their very soul.  
 Special ability: Use the `[p]forge` command.  
 * Forge together two items in your backpack to potentially make an incredibly powerful random item.  
-Preferred stat: INT  
-At 30 rebirths, Tinkerers can forge Ascended-level items.  
+Preferred stat: INT or ATK  
+Higher rebirth levels allow access to better forging materials.
+* **Veteran Tinkerers** can forge using Ascended materials.
   
 **Berserkers** have the option to rage and add big bonuses to attacks, but fumbles hurt.  
 Use the `[p]rage` command when attacking in an adventure.  
 * Causes a large amount of ATK-based/Physical-based damage.  
 Preferred stat: ATK  
 Rebirths provide not only a base bonus to attacks as Berserkers grow stronger, but they augment critical strike chance and attack value.  
+* **Veteran Berserkers**' rage bonus attack will pierce the enemy, ignoring any physical defense.
   
 **Clerics** can bless the entire group when praying.  
 Use the `[p]bless` command when fighting in an adventure.  
 * Bless your groups' damage by invoking your deity. The more people that are participating, the harder the deity smites their foes... if they choose to help.  
 Preferred stat: INT  
 Every 15 rebirths a Cleric recieves another +1 to their successful prayer damage multiplier.  
+* **Veteran Clerics** have an addition +2 count to each action list (e.g. Fight, Magic, Talk), provided at least 1 person has taken that action.
   
 **Rangers** can gain a special pet, which can find items and give reward bonuses.  
 Use the `[p]pet` command to try to catch a pet companion. Pet catching can be spammy, so `[p]pet` can be run in DMs.  
 `[p]pet forage` sends a pet to search for items, and `[p]pet free` will free your companion in case you wish to try your hand at capturing something that brings in more gold and loot from fights.  
-* Catch one of over 900 randomly-generated pets in search of the legendary beasts rumored to exist...  
-Preferred stat: CHA for charming pet companions and enemies, or ATK for pure damage  
+* Catch one of over 300 randomly-generated pets in search of the legendary beasts rumored to exist...  
+Preferred stat: CHA for charming pet companions and enemies, or ATK/INT for pure damage.  
+Higher CHA will increase pet bonus proc chance.
+* **Veteran Rangers**' pets will roll crit chance with advantage, increasing the probability of dealing crit damage.
+
   
 **Wizards** have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...  
 Use the `[p]focus` command when attacking in an adventure.  
 * Causes a large amount of Int-based/Magic-based damage.  
 Preferred stat: INT  
-  
+Rebirths provides bonuses to the Wizard's focus abilities.  
+* **Veteran Wizards** have the ability to double cast their focus spells. The second cast has slightly less effectiveness than the first cast.
+
+
 **Bards** can perform to aid their comrades in diplomacy.  
 Use the `[p]music` command when being diplomatic in an adventure.  
-* Buffs other Charisma-using players when attacking.  
+* High bonus to diplomatic actions. 
 Preferred stat: CHA  
-Rebirth levels can buff the base value of the bard's attack.  
+Rebirth levels can buff the base value of the bard's diplomacy.  
+* **Veteran Bards** provide party wide bonus to diplomacy based on their own musical bonus.
+
   
 **Psychics** can show the enemy's weaknesses to their group allowing them to target the monster's weak-points.  
-Use the `[p]insight` command in an adventure.  
+Use the `[p]insight` command in an adventure. 
 * A successful insight into an enemy's weak points during an adventure can turn the tide on difficult encounters.  
 Preferred stat: INT  
+* This prestige class unlocks at rebirth 20, so it does not have a Veteran rank.
 
 
 ## Basic Commands for Players

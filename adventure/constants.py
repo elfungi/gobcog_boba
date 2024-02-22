@@ -18,6 +18,7 @@ log = logging.getLogger("red.cogs.adventure")
 ANSI_ESCAPE = "\u001b"
 ANSI_CLOSE = "\u001b[0m"
 
+HC_VETERAN_RANK = 20
 
 class Slot(Enum):
     head = "head"
@@ -530,6 +531,14 @@ class HeroClasses(Enum):
             "bard": _("Bard"),
             "psychic": _("Psychic"),
         }
+
+    def class_rank_name(self, rebirth):
+        if rebirth >= HC_VETERAN_RANK:
+            if self.value != "psychic":
+                # psychics start at 20 min
+                return _("Veteran {}").format(self.class_name)
+        else:
+            return self.class_name()
 
     @property
     def class_colour(self) -> ANSITextColours:

@@ -464,6 +464,7 @@ class PrettyBackpackSource(menus.ListPageSource):
                                               Rarities.ascended] and degrade >= 0 else ""
             set_value = _set if rarity in [Rarities.set] else ""
 
+
             ansi_name = rarity.as_ansi(name)
             level_value = format_ansi(level, ANSITextColours.red) if cannot_equip else format_ansi(level)
             i_data = (
@@ -998,6 +999,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._sold_price = 0
+        self._search_text = ""
         self.initial_state()
         # remove useless buttons from parents
         self.remove_item(self.stop_button)
@@ -1014,6 +1016,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._sold_price = 0
+        self._search_text = ""
 
     def initial_stats_filters(self):
         return {
@@ -1026,11 +1029,16 @@ class InteractiveBackpackMenu(BaseMenu):
             'lvl': None
         }
 
-    def set_stat_filter(self, attr, value):
-        if value:
-            self._stats[attr] = [value]
-        else:
-            self._stats[attr] = None
+    def highlight_stats_filter_button(self, button, attrs):
+        selected = False
+        for i in attrs:
+            if self._stats[i] is not None:
+                button.style = discord.ButtonStyle.green
+                selected = True
+                break
+        if not selected:
+            button.style = discord.ButtonStyle.grey
+        return selected
 
     async def update(self):
         view_buttons = {
@@ -1048,11 +1056,36 @@ class InteractiveBackpackMenu(BaseMenu):
             Rarities.ascended: self.ascended_filter,
             Rarities.set: self.set_filter
         }
+
+        rarity_enabled = False
         for r in [Rarities.normal, Rarities.epic, Rarities.legendary, Rarities.ascended, Rarities.set]:
             if r in self._rarities:
                 rarity_buttons[r].style = discord.ButtonStyle.green
+                rarity_enabled = True
             else:
-                rarity_buttons[r].style = discord.ButtonStyle.gray
+                rarity_buttons[r].style = discord.ButtonStyle.grey
+
+        if not rarity_enabled:
+            self.clear_rarity.disabled = True
+            self.clear_rarity.style = discord.ButtonStyle.grey
+        else:
+            self.clear_rarity.disabled = False
+            self.clear_rarity.style = discord.ButtonStyle.red
+
+        filter_selected = self.highlight_stats_filter_button(self.filter_group_1, ['att', 'cha', 'int', 'dex', 'luk'])
+        filter_selected = filter_selected or self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl'])
+        if len(self._search_text) > 0:
+            self.search_button.style = discord.ButtonStyle.green
+            filter_selected = True
+        else:
+            self.search_button.style = discord.ButtonStyle.grey
+
+        if not filter_selected:
+            self.clear_filters.disabled = True
+            self.clear_filters.style = discord.ButtonStyle.grey
+        else:
+            self.clear_filters.disabled = False
+            self.clear_filters.style = discord.ButtonStyle.red
 
         if self._sold_count == SELL_CONFIRM_AMOUNT:
             self.confirm_sell.disabled = False
@@ -1062,7 +1095,7 @@ class InteractiveBackpackMenu(BaseMenu):
             self.confirm_sell.style = discord.ButtonStyle.grey
 
     @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
-                       row=1)
+                       row=0)
     async def _stop_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         button.view.stop()
         if interaction.message.flags.ephemeral:
@@ -1071,25 +1104,26 @@ class InteractiveBackpackMenu(BaseMenu):
         await interaction.message.delete()
 
     @discord.ui.button(style=discord.ButtonStyle.grey,
-                       emoji="\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+                       emoji="\N{BLACK LEFT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=0)
     async def _back_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         button.view.current_page -= 1 if button.view.current_page > 0 else 0
         await self.navigate_page(interaction, button)
 
     @discord.ui.button(style=discord.ButtonStyle.grey,
-                       emoji="\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=1)
+                       emoji="\N{BLACK RIGHT-POINTING TRIANGLE}\N{VARIATION SELECTOR-16}", row=0)
     async def _forward_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         max_pages = self.source.get_max_pages()
         if button.view.current_page + 1 < max_pages:
             button.view.current_page += 1
         await self.navigate_page(interaction, button)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Sell All \u200b \u200b", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red,
+                       label="\u200b \u200b \u200b \u200b \u200b Sell All \u200b \u200b \u200b \u200b \u200b", row=0)
     async def sell_all_in_view(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._sold_count = SELL_CONFIRM_AMOUNT
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Confirm \u200b \u200b", disabled=True, row=1)
+    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Confirm \u200b \u200b", disabled=True, row=0)
     async def confirm_sell(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         backpack_items = await self.get_backpack_item_for_sell()
         count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
@@ -1097,56 +1131,61 @@ class InteractiveBackpackMenu(BaseMenu):
         self._sold_price = amount
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Normal + Rare", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green,
+                       label="\u200b \u200b \u200b Normal + Rare \u200b \u200b \u200b ", row=1)
     async def normal_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.normal)
         self.update_rarities(Rarities.rare)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Epic", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Epic", row=1)
     async def epic_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.epic)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="\u200b \u200b Legendary \u200b", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="\u200b \u200b Legendary \u200b \u200b", row=1)
     async def legendary_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.legendary)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Ascended", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Ascended", row=1)
     async def ascended_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.ascended)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Set", row=2)
+    @discord.ui.button(style=discord.ButtonStyle.green,
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b Set \u200b \u200b \u200b \u200b \u200b \u200b",
+                       row=1)
     async def set_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.update_rarities(Rarities.set)
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.grey, label="Stat Filters", row=3)
+    @discord.ui.button(style=discord.ButtonStyle.grey,
+                       label="\u200b \u200b \u200b \u200b \u200b Stats Filters \u200b \u200b \u200b \u200b \u200b ",
+                       row=2)
     async def filter_group_1(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'}}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 1", input_mapping)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(style=discord.ButtonStyle.grey, label="Deg/Lvl Filters", row=3)
+    @discord.ui.button(style=discord.ButtonStyle.grey,
+                       label="\u200b \u200b \u200b Degrade/Level Filters\u200b \u200b \u200b",
+                       row=2)
     async def filter_group_2(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'deg', 'lvl'}}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 2", input_mapping)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Clear Rarity \u200b \u200b", row=3)
-    async def clear_rarity(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
-        await self.do_change_source(interaction)
-
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Clear Filters\u200b \u200b", row=3)
-    async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._stats = self.initial_stats_filters()
-        await self.do_change_source(interaction)
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b  Search By Name \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
+                       row=2)
+    async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        modal = InteractiveBackpackSearchModal(self, self.ctx)
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(style=discord.ButtonStyle.primary,
-                       label="\u200b \u200b \u200b \u200b Default \u200b \u200b \u200b", row=4)
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Default \u200b \u200b \u200b \u200b \u200b  \u200b \u200b \u200b \u200b \u200b ",
+                       row=3)
     async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "default"
         self._equippable = False
@@ -1154,8 +1193,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary,
-                       label="\u200b \u200b \u200b \u200b \u200b Can Equip \u200b \u200b \u200b \u200b", row=4)
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b Can Equip \u200b \u200b", row=3)
     async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._current_view = "can_equip"
         self._equippable = True
@@ -1163,11 +1201,22 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_sell()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.red,
-                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
-                       row=4)
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Reset", row=3)
     async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self.initial_state()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+                       label="Rarity", row=3)
+    async def clear_rarity(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
+                       label="Filters", row=3)
+    async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._stats = self.initial_stats_filters()
+        self._search_text = ""
         await self.do_change_source(interaction)
 
     def update_rarities(self, rarity):
@@ -1191,6 +1240,12 @@ class InteractiveBackpackMenu(BaseMenu):
         else:
             return None
 
+    def set_stat_filter(self, attr, value):
+        if value:
+            self._stats[attr] = [value]
+        else:
+            self._stats[attr] = None
+
     async def get_backpack_items(self, for_sell=False):
         att_filter = self.get_filter_attr('att')
         cha_filter = self.get_filter_attr('cha')
@@ -1203,6 +1258,7 @@ class InteractiveBackpackMenu(BaseMenu):
             return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities,
                                                                        equippable=self._equippable,
                                                                        delta=self._delta,
+                                                                       match=self._search_text,
                                                                        strength=att_filter,
                                                                        charisma=cha_filter,
                                                                        intelligence=int_filter,
@@ -1214,6 +1270,7 @@ class InteractiveBackpackMenu(BaseMenu):
             return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
                                                                  equippable=self._equippable,
                                                                  delta=self._delta,
+                                                                 match=self._search_text,
                                                                  strength=att_filter,
                                                                  charisma=cha_filter,
                                                                  intelligence=int_filter,
@@ -1230,6 +1287,13 @@ class InteractiveBackpackMenu(BaseMenu):
             source=PrettyBackpackSource(backpack_items, balance, include_sets, self._sold_count, self._sold_price),
             interaction=interaction)
 
+    async def do_change_source_from_search(self, interaction):
+        self._current_view = "search"
+        self._equippable = False
+        self._delta = False
+        self.reset_sell()
+        await self.do_change_source(interaction)
+
     async def navigate_page(self, interaction, button):
         try:
             page = await button.view.source.get_page(button.view.current_page)
@@ -1238,6 +1302,10 @@ class InteractiveBackpackMenu(BaseMenu):
             page = await button.view.source.get_page(button.view.current_page)
         kwargs = await button.view._get_kwargs_from_page(page)
         await interaction.response.edit_message(**kwargs)
+
+    @property
+    def search_text(self):
+        return self._search_text
 
 
 class InteractiveBackpackFilterModal(discord.ui.Modal):
@@ -1274,6 +1342,29 @@ class InteractiveBackpackFilterModal(discord.ui.Modal):
             default=v,
             style=discord.TextStyle.short,
             max_length=20,
+            min_length=0,
+            required=False
+        )
+
+
+class InteractiveBackpackSearchModal(discord.ui.Modal):
+    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context):
+        super().__init__(title='Backpack Search')
+        self.ctx = ctx
+        self.backpack_menu = backpack_menu
+        self.search_input = self.build_input(backpack_menu.search_text)
+        self.add_item(self.search_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.backpack_menu._search_text = self.search_input.value
+        await self.backpack_menu.do_change_source(interaction)
+
+    def build_input(self, value):
+        return discord.ui.TextInput(
+            label="Search by name (case insensitive)",
+            default=value,
+            style=discord.TextStyle.short,
+            max_length=100,
             min_length=0,
             required=False
         )

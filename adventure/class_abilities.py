@@ -17,7 +17,7 @@ from redbot.core.utils.predicates import MessagePredicate
 from .abc import AdventureMixin
 from .bank import bank
 from .charsheet import Character, Item
-from .constants import HeroClasses, Rarities, Slot
+from .constants import HeroClasses, Rarities, Slot, HC_VETERAN_RANK
 from .converters import HeroClassConverter, ItemConverter
 from .helpers import ConfirmView, escape, is_dev, smart_embed
 from .menus import BaseMenu, SimpleSource
@@ -318,19 +318,33 @@ class ClassAbilities(AdventureMixin):
 
                     pet_bonus = pet_list[pet].get("bonus", 0)
                     if pet_bonus >= 1.9:
-                        pet_bonus_str = "Its brilliant glow blinded you for a brief moment!"
+                        pet_bonus_str = "Its brilliant glow is blinding!"
                     elif pet_bonus >= 1.7:
                         pet_bonus_str = "It's full of energy and zooming around at amazing speeds!"
                     elif pet_bonus >= 1.5:
-                        pet_bonus_str = "It beams at you with bright eyes and eager promise."
+                        pet_bonus_str = "Its bright eyes shows eager and promise."
                     elif pet_bonus >= 1.3:
-                        pet_bonus_str = "It looks at you in anticipation."
+                        pet_bonus_str = "It looks in anticipation."
                     elif pet_bonus >= 1.1:
                         pet_bonus_str = "It made an effort to move, but it seems a little clumsy."
                     else:
                         pet_bonus_str = "It's just loafing around."
 
-                    pet_base_msg = "{c} encounters a wild {pet_name}. " + pet_bonus_str
+                    pet_crit = pet_list[pet].get("bonuses", {}).get("crit", 0)
+                    if pet_crit >= 80:
+                        pet_crit_str = "It's as mighty as an Elder Dragon!"
+                    elif pet_crit >= 40:
+                        pet_crit_str = "It has the demeanor of a seasoned fighter!"
+                    elif pet_crit >= 20:
+                        pet_crit_str = "It's putting on a proud display of strength."
+                    elif pet_crit >= 10:
+                        pet_crit_str = "It looks like it could use some fighting experience."
+                    elif pet_crit >= 2:
+                        pet_crit_str = "It doesn't seem like it's going to help win many battles."
+                    else:
+                        pet_crit_str = "It has spirit... No, never mind. It fell over."
+
+                    pet_base_msg = "{c} encounters a wild {pet_name}. " + pet_bonus_str + " " + pet_crit_str
                     pet_msg = box(
                         _(pet_base_msg).format(
                             c=escape(ctx.author.display_name),
@@ -427,7 +441,7 @@ class ClassAbilities(AdventureMixin):
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
                     else:
                         pet_msg3 = box(
-                            _("{bonus}\nUnfortunately, the {pet} doesn't seem very interested in you.").format(
+                            _("{bonus}\nUnfortunately, the {pet} doesn't seem very interested.").format(
                                 bonus=bonus,
                                 pet=pet,
                                 dice=self.emojis.dice,
@@ -937,7 +951,7 @@ class ClassAbilities(AdventureMixin):
                     )
                 ascended_forge_msg = ""
                 ignored_rarities = [Rarities.forged, Rarities.set, Rarities.event]
-                if c.rebirths < 30:
+                if c.rebirths < HC_VETERAN_RANK:
                     ignored_rarities.append(Rarities.ascended)
                     ascended_forge_msg += _("\n\nAscended items will be forgeable after 30 rebirths.")
                 consumed = []
