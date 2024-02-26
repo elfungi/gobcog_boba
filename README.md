@@ -13,6 +13,18 @@ If you need a Red 3.4 version of this cog, see [here](https://github.com/aikater
 
 To start an adventure, use `[p]adventure` or `[p]a`. Reactions will appear underneath the text of the adventure randomly selected for your group. Use 🗡 to attack the monster, ✨ to use magic on the monster, 🗨 to talk with the monster, 🛐 to pray to the god Herbert (customizable). The more people helping the easier it is to defeat the monster and acquire its loot. 
 
+## Auto Battle
+After taking an action in the battle, each user who manually participated will be placed on the auto-battle list.  
+
+These auto users will help participate in the next set number of fights based on the highest count action taken (i.e. if there are more Attackers than Casters, every Auto Battler will attack).  
+Clerics are an exception to his rule - they will always perform the Pray action, and non-Clerics will never Pray.  
+If any action sizes are equal, the order of priority for auto battling is: Attack -> Talk -> Magic.
+
+Auto-battlers will gain 50% of the experience and gold from the encounter, but will receive the full amount of treasure.  
+
+After 20 auto-battles without any manual action, the user will no longer participate in the battle automatically.  
+Every time a user takes a manual option (i.e. pressing Attack, Magic, Talk, or Pray again), they will have their auto-battle count reset to fresh.  
+A user can also manually remove themselves from the Auto list but clicking on the Auto action button and confirming to Run.
 
 ## Hero/Heroclass
 
@@ -53,14 +65,12 @@ Preferred stat: CHA for charming pet companions and enemies, or ATK/INT for pure
 Higher CHA will increase pet bonus proc chance.
 * **Veteran Rangers**' pets will roll crit chance with advantage, increasing the probability of dealing crit damage.
 
-  
 **Wizards** have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...  
 Use the `[p]focus` command when attacking in an adventure.  
 * Causes a large amount of Int-based/Magic-based damage.  
 Preferred stat: INT  
 Rebirths provides bonuses to the Wizard's focus abilities.  
 * **Veteran Wizards** have the ability to double cast their focus spells. The second cast has slightly less effectiveness than the first cast.
-
 
 **Bards** can perform to aid their comrades in diplomacy.  
 Use the `[p]music` command when being diplomatic in an adventure.  
@@ -69,7 +79,6 @@ Preferred stat: CHA
 Rebirth levels can buff the base value of the bard's diplomacy.  
 * **Veteran Bards** provide party wide bonus to diplomacy based on their own musical bonus.
 
-  
 **Psychics** can show the enemy's weaknesses to their group allowing them to target the monster's weak-points.  
 Use the `[p]insight` command in an adventure. 
 * A successful insight into an enemy's weak points during an adventure can turn the tide on difficult encounters.  
@@ -90,7 +99,7 @@ Preferred stat: INT
 * Use `[p]help backpack` to see a list of useful backpack management subcommands, including player item trading.
 
 `[p]ibackpack`
-* An interactive backpack tool to filter and sell items. Provides most of the basic functionality you would normally use, but more advance users can still use some of the richer functionality of `[p]backpack` and `[p]cbackpack`.
+* An interactive backpack tool to filter, sell items, and open loot. Provides most of the basic functionality you would normally use, but more advance users can still use some of the richer functionality of `[p]backpack` and `[p]cbackpack`.
 
 `[p]equip` / `[p]unequip`
 * Equip/Unequip items by using the item name with the command

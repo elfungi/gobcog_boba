@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
+from functools import reduce
 
 import discord
+from discord import Interaction
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import escape, humanize_number
@@ -408,13 +410,17 @@ class EconomySource(menus.ListPageSource):
 
 
 class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], balance=0, include_sets=True, sold_count=0, sold_price=0):
+    def __init__(self, entries: List[Dict], balance=0, include_sets=True, chests=None, convert_results=None,
+                 sold_count=0, sold_price=0, loot_count=0):
         super().__init__(entries, per_page=10)
         self._balance = balance
         self._include_sets = include_sets
+        self._chests = chests
+        self._convert_results = convert_results
         self._sold_count = sold_count
         self._sold_price = sold_price
         self._items_len = len(entries)
+        self._loot_count = loot_count
 
     def is_paginating(self):
         return True
@@ -429,6 +435,7 @@ class PrettyBackpackSource(menus.ListPageSource):
         author = ctx.author
         start_position = (menu.current_page * self.per_page) + 1
 
+        # START formatting data for item entries
         header = (
             f"{format_ansi('Name'):{name_len}}"  # use ansi on this field to match spacing on table
             f"{'Slot':{slot_len}}"
@@ -464,7 +471,6 @@ class PrettyBackpackSource(menus.ListPageSource):
                                               Rarities.ascended] and degrade >= 0 else ""
             set_value = _set if rarity in [Rarities.set] else ""
 
-
             ansi_name = rarity.as_ansi(name)
             level_value = format_ansi(level, ANSITextColours.red) if cannot_equip else format_ansi(level)
             i_data = (
@@ -482,34 +488,76 @@ class PrettyBackpackSource(menus.ListPageSource):
             if self._include_sets:
                 i_data += f"     {set_value:{set_len}}"
             data.append(i_data)
+        # END formatting data
 
+        # Header
         msg = "```{}'s Backpack - {} gold```".format(author, humanize_number(self._balance))
         msg += "```ansi\n{}```".format(header)
 
-        if len(data) == 0:
-            no_content = "There doesn't seem to be anything here..."
-            msg += "```md\n{}```".format(no_content)
+        # START body - this is where the main view is of backpack items
+        if self._chests is None or self._loot_count > 0:
+            # Item view - either backpack items or opened loot items
+            if len(data) == 0:
+                no_content = "There doesn't seem to be anything here..."
+                msg += "```md\n{}```".format(no_content)
+            else:
+                msg += "```ansi\n{}``````ansi\n{}```".format(
+                    "\n".join(data),
+                    f"Page {menu.current_page + 1}/{self.get_max_pages()}"
+                )
         else:
-            msg += "```ansi\n{}``````ansi\n{}```".format(
-                "\n".join(data),
-                f"Page {menu.current_page + 1}/{self.get_max_pages()}"
-            )
+            # Loot view - start of view to convert or open chests
+            msg += ("```ansi\nYou own {} chests.\n"
+                    "\nUse corresponding rarity buttons below to open your chests."
+                    "\n"
+                    "\nAuto-Convert will convert all your chests in multiples of 25 up to Legendary.```"
+                    .format(self._chests))
+        # END body
 
+        # Start contextual message
         if self._sold_count > 0:
+            # Items sold
             msg += "```md\n* {} item(s) sold for {}.```".format(
                 self._sold_count,
                 humanize_number(self._sold_price)
             )
         elif self._sold_count == -1:
-            msg += "```md\n* You tried to go sell your items but the monster ahead is not allowing you to leave.```".format(
-                self._sold_count,
-                humanize_number(self._sold_price)
-            )
+            # Tried to sell item but in adventure
+            msg += "```md\nYou tried to go sell your items but the monster ahead is not allowing you to leave.```"
         elif self._sold_count == SELL_CONFIRM_AMOUNT:
-            msg += "```md\n* Are you sure you want to sell these {} listings and their copies? Press the confirm button to proceed.```".format(
-                humanize_number(self._items_len)
-            )
-
+            # Confirmation needed for selling
+            msg += (
+                "```md\n* Are you sure you want to sell these {} listings and their copies? Press the confirm button to proceed.```"
+                .format(
+                    humanize_number(self._items_len)
+                ))
+        elif self._convert_results is not None:
+            # Doing auto-convert
+            if len(self._convert_results.keys()) == 0:
+                # Tried to auto-convert but in adventure
+                msg += "```md\n* You tried to go convert your loot but the monster ahead is not allowing you to leave.```"
+            elif reduce(lambda a, b: a + b, self._convert_results.values()) == 0:
+                # Tried to auto-convert but nothing was converted
+                msg += "```md\n* You tried to go convert your loot but you're a bit short on chests to upgrade.```"
+            else:
+                # Successful convert
+                msg += "```md\n* Successfully converted into"
+                normal = " {} Rare".format(self._convert_results["normal"]) if self._convert_results[
+                                                                                   "normal"] > 0 else ""
+                rare = " {} Epic".format(self._convert_results["rare"]) if self._convert_results["rare"] > 0 else ""
+                epic = " {} Legendary".format(self._convert_results["epic"]) if self._convert_results[
+                                                                                    "epic"] > 0 else ""
+                msg += ",".join(filter(None, [normal, rare, epic]))
+                msg += " chest(s).```"
+        elif self._loot_count > 0:
+            # Opened chests
+            print(self._items_len, self.entries)
+            if self._items_len == 0:
+                # Tried to open chests but in adventure or backpack is full
+                msg += "```md\n* You tried to go open your loot but you're either occupied or your backpack is full.```"
+            else:
+                # Chests opened successful
+                msg += ("```ansi\nYou own {} chests.```".format(self._chests))
         return msg
 
 
@@ -976,6 +1024,8 @@ class InteractiveBackpackMenu(BaseMenu):
             source,
             c: Character,
             sell_callback: Any,
+            convert_callback: Any,
+            open_loot_callback: Any,
             clear_reactions_after: bool = True,
             delete_message_after: bool = False,
             timeout: int = 180,
@@ -992,6 +1042,8 @@ class InteractiveBackpackMenu(BaseMenu):
         )
         self._c = c
         self._sell_callback = sell_callback
+        self._convert_callback = convert_callback
+        self._open_loot_callback = open_loot_callback
         self._current_view = ""
         self._rarities = []
         self._stats = self.initial_stats_filters()
@@ -999,6 +1051,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._sold_price = 0
+        self._convert_results = None
         self._search_text = ""
         self.initial_state()
         # remove useless buttons from parents
@@ -1016,6 +1069,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._sold_price = 0
+        self._convert_results = None
         self._search_text = ""
 
     def initial_stats_filters(self):
@@ -1030,27 +1084,35 @@ class InteractiveBackpackMenu(BaseMenu):
         }
 
     def highlight_stats_filter_button(self, button, attrs):
-        selected = False
-        for i in attrs:
-            if self._stats[i] is not None:
-                button.style = discord.ButtonStyle.green
-                selected = True
-                break
-        if not selected:
+        if self._current_view == "loot":
             button.style = discord.ButtonStyle.grey
-        return selected
+            button.disabled = True
+            return False
+        else:
+            button.disabled = False
+            selected = False
+            for i in attrs:
+                if self._stats[i] is not None:
+                    button.style = discord.ButtonStyle.green
+                    selected = True
+                    break
+            if not selected:
+                button.style = discord.ButtonStyle.grey
+            return selected
 
     async def update(self):
         view_buttons = {
             "default": self.default_button,
-            "can_equip": self.can_equip_button
+            "can_equip": self.can_equip_button,
+            "loot": self.loot_button
         }
         for button in view_buttons.values():
             button.disabled = False
         view_buttons[self._current_view].disabled = True
+        loot_view = self._current_view == "loot"
 
         rarity_buttons = {
-            Rarities.normal: self.normal_filter,
+            Rarities.rare: self.rare_filter,
             Rarities.epic: self.epic_filter,
             Rarities.legendary: self.legendary_filter,
             Rarities.ascended: self.ascended_filter,
@@ -1058,14 +1120,23 @@ class InteractiveBackpackMenu(BaseMenu):
         }
 
         rarity_enabled = False
-        for r in [Rarities.normal, Rarities.epic, Rarities.legendary, Rarities.ascended, Rarities.set]:
-            if r in self._rarities:
-                rarity_buttons[r].style = discord.ButtonStyle.green
-                rarity_enabled = True
+        for r in [Rarities.rare, Rarities.epic, Rarities.legendary, Rarities.ascended, Rarities.set]:
+            if loot_view:
+                if self._c.treasure[r.value] > 0:
+                    rarity_buttons[r].style = discord.ButtonStyle.green
+                    rarity_buttons[r].disabled = False
+                else:
+                    rarity_buttons[r].style = discord.ButtonStyle.grey
+                    rarity_buttons[r].disabled = True
             else:
-                rarity_buttons[r].style = discord.ButtonStyle.grey
+                rarity_buttons[r].disabled = False
+                if r in self._rarities:
+                    rarity_buttons[r].style = discord.ButtonStyle.green
+                    rarity_enabled = True
+                else:
+                    rarity_buttons[r].style = discord.ButtonStyle.grey
 
-        if not rarity_enabled:
+        if not rarity_enabled or loot_view:
             self.clear_rarity.disabled = True
             self.clear_rarity.style = discord.ButtonStyle.grey
         else:
@@ -1074,25 +1145,44 @@ class InteractiveBackpackMenu(BaseMenu):
 
         filter_selected = self.highlight_stats_filter_button(self.filter_group_1, ['att', 'cha', 'int', 'dex', 'luk'])
         filter_selected = filter_selected or self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl'])
-        if len(self._search_text) > 0:
+        if len(self._search_text) > 0 and not loot_view:
             self.search_button.style = discord.ButtonStyle.green
             filter_selected = True
         else:
             self.search_button.style = discord.ButtonStyle.grey
+        self.search_button.disabled = loot_view
 
-        if not filter_selected:
+        if not filter_selected or loot_view:
             self.clear_filters.disabled = True
             self.clear_filters.style = discord.ButtonStyle.grey
         else:
             self.clear_filters.disabled = False
             self.clear_filters.style = discord.ButtonStyle.red
 
-        if self._sold_count == SELL_CONFIRM_AMOUNT:
-            self.confirm_sell.disabled = False
-            self.confirm_sell.style = discord.ButtonStyle.red
+        self.update_contextual_button()
+
+    def update_contextual_button(self):
+        label_space_pre = "\u200b "
+        label_space_post = " \u200b"
+        sell_all_label = str(label_space_pre * 15) + "Sell All" + str(label_space_post * 21)
+        confirm_sell_label = str(label_space_pre * 17) + "Confirm Sell" + str(label_space_post * 16)
+        auto_convert_label = str(label_space_pre * 15) + "Auto-Convert" + str(label_space_post * 15)
+
+        if self._current_view != "loot":
+            if self._sold_count == SELL_CONFIRM_AMOUNT:
+                # sell all confirm
+                self.contextual_button.emoji = None
+                self.contextual_button.label = confirm_sell_label
+                self.contextual_button.style = discord.ButtonStyle.red
+            else:
+                # sell all enabled
+                self.contextual_button.emoji = "\N{COIN}"
+                self.contextual_button.label = sell_all_label
+                self.contextual_button.style = discord.ButtonStyle.red
         else:
-            self.confirm_sell.disabled = True
-            self.confirm_sell.style = discord.ButtonStyle.grey
+            self.contextual_button.emoji = None
+            self.contextual_button.label = auto_convert_label
+            self.contextual_button.style = discord.ButtonStyle.green
 
     @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
                        row=0)
@@ -1117,99 +1207,135 @@ class InteractiveBackpackMenu(BaseMenu):
             button.view.current_page += 1
         await self.navigate_page(interaction, button)
 
-    @discord.ui.button(style=discord.ButtonStyle.red,
-                       label="\u200b \u200b \u200b \u200b \u200b Sell All \u200b \u200b \u200b \u200b \u200b", row=0)
-    async def sell_all_in_view(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._sold_count = SELL_CONFIRM_AMOUNT
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="Contextual Button", row=0)
+    async def contextual_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if self._current_view != "loot":
+            if self._sold_count == SELL_CONFIRM_AMOUNT:
+                # confirm action
+                backpack_items = await self.get_backpack_item_for_sell()
+                count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
+                self._sold_count = count
+                self._sold_price = amount
+                await self.do_change_source(interaction)
+            else:
+                # start confirm action
+                self._sold_count = SELL_CONFIRM_AMOUNT
+                await self.do_change_source(interaction)
+        else:
+            # auto-convert button
+            self._convert_results = await self._convert_callback(self.ctx, self._c)
+            await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Backpack\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
+                       row=1)
+    async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._current_view = "default"
+        self._equippable = False
+        self._delta = False
+        self.reset_contextual_state()
         await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.red, label="\u200b \u200b Confirm \u200b \u200b", disabled=True, row=0)
-    async def confirm_sell(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        backpack_items = await self.get_backpack_item_for_sell()
-        count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
-        self._sold_count = count
-        self._sold_price = amount
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="Loot",
+                       row=1)
+    async def loot_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._current_view = "loot"
+        self.reset_contextual_state()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b Equipable \u200b \u200b \u200b", row=1)
+    async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._current_view = "can_equip"
+        self._equippable = True
+        self._delta = True
+        self.reset_contextual_state()
+        await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red,
+                       label="\u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b ", row=1)
+    async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.initial_state()
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.green,
-                       label="\u200b \u200b \u200b Normal + Rare \u200b \u200b \u200b ", row=1)
-    async def normal_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.update_rarities(Rarities.normal)
-        self.update_rarities(Rarities.rare)
-        await self.do_change_source(interaction)
+                       label="\u200b \u200b \u200b Normal + Rare \u200b \u200b \u200b ", row=2)
+    async def rare_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if self._current_view == "loot":
+            title = "Can't open Normal, sorry. Enter # for Rare."
+            modal = InteractiveBackpackLootModal(self, self.ctx, "rare", self._c.treasure["rare"].number, title)
+            await interaction.response.send_modal(modal)
+        else:
+            self.update_rarities(Rarities.normal)
+            self.update_rarities(Rarities.rare)
+            await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Epic", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Epic", row=2)
     async def epic_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.update_rarities(Rarities.epic)
-        await self.do_change_source(interaction)
+        if self._current_view == "loot":
+            modal = InteractiveBackpackLootModal(self, self.ctx, "epic", self._c.treasure["epic"].number)
+            await interaction.response.send_modal(modal)
+        else:
+            self.update_rarities(Rarities.epic)
+            await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="\u200b \u200b Legendary \u200b \u200b", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="\u200b \u200b Legendary \u200b \u200b", row=2)
     async def legendary_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.update_rarities(Rarities.legendary)
-        await self.do_change_source(interaction)
+        if self._current_view == "loot":
+            modal = InteractiveBackpackLootModal(self, self.ctx, "legendary", self._c.treasure["legendary"].number)
+            await interaction.response.send_modal(modal)
+        else:
+            self.update_rarities(Rarities.legendary)
+            await self.do_change_source(interaction)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Ascended", row=1)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Ascended", row=2)
     async def ascended_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.update_rarities(Rarities.ascended)
-        await self.do_change_source(interaction)
+        if self._current_view == "loot":
+            modal = InteractiveBackpackLootModal(self, self.ctx, "ascended", self._c.treasure["ascended"].number)
+            await interaction.response.send_modal(modal)
+        else:
+            self.update_rarities(Rarities.ascended)
+            await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.green,
                        label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b Set \u200b \u200b \u200b \u200b \u200b \u200b",
-                       row=1)
+                       row=2)
     async def set_filter(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.update_rarities(Rarities.set)
-        await self.do_change_source(interaction)
+        if self._current_view == "loot":
+            modal = InteractiveBackpackLootModal(self, self.ctx, "set", self._c.treasure["set"].number)
+            await interaction.response.send_modal(modal)
+        else:
+            self.update_rarities(Rarities.set)
+            await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b Search By Name \u200b",
+                       row=3)
+    async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        modal = InteractiveBackpackSearchModal(self, self.ctx)
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(style=discord.ButtonStyle.grey,
-                       label="\u200b \u200b \u200b \u200b \u200b Stats Filters \u200b \u200b \u200b \u200b \u200b ",
-                       row=2)
+                       label="Stats",
+                       row=3)
     async def filter_group_1(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'}}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 1", input_mapping)
         await interaction.response.send_modal(modal)
 
     @discord.ui.button(style=discord.ButtonStyle.grey,
-                       label="\u200b \u200b \u200b Degrade/Level Filters\u200b \u200b \u200b",
-                       row=2)
+                       label="\u200b \u200b \u200b \u200b \u200b Deg/Lvl \u200b \u200b \u200b \u200b",
+                       row=3)
     async def filter_group_2(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'deg', 'lvl'}}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 2", input_mapping)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(style=discord.ButtonStyle.primary,
-                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b  Search By Name \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
-                       row=2)
-    async def search_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        modal = InteractiveBackpackSearchModal(self, self.ctx)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(style=discord.ButtonStyle.primary,
-                       label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Default \u200b \u200b \u200b \u200b \u200b  \u200b \u200b \u200b \u200b \u200b ",
-                       row=3)
-    async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._current_view = "default"
-        self._equippable = False
-        self._delta = False
-        self.reset_sell()
-        await self.do_change_source(interaction)
-
-    @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b Can Equip \u200b \u200b", row=3)
-    async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._current_view = "can_equip"
-        self._equippable = True
-        self._delta = True
-        self.reset_sell()
-        await self.do_change_source(interaction)
-
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Reset", row=3)
-    async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.initial_state()
-        await self.do_change_source(interaction)
-
     @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
                        label="Rarity", row=3)
     async def clear_rarity(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._rarities = [Rarities.event]  # cheat here and use a rarity we don't have to filter
+        self._rarities = [Rarities.pet]  # cheat here and use a rarity we don't have to filter
+        self.reset_contextual_state()
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.red, emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
@@ -1217,18 +1343,20 @@ class InteractiveBackpackMenu(BaseMenu):
     async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._stats = self.initial_stats_filters()
         self._search_text = ""
+        self.reset_contextual_state()
         await self.do_change_source(interaction)
 
     def update_rarities(self, rarity):
-        self.reset_sell()
+        self.reset_contextual_state()
         if rarity in self._rarities:
             self._rarities.remove(rarity)
         else:
             self._rarities.append(rarity)
 
-    def reset_sell(self):
+    def reset_contextual_state(self):
         self._sold_count = 0
         self._sold_price = 0
+        self._convert_results = None
 
     async def get_backpack_item_for_sell(self):
         return await self.get_backpack_items(True)
@@ -1279,20 +1407,26 @@ class InteractiveBackpackMenu(BaseMenu):
                                                                  degrade=deg_filter,
                                                                  level=lvl_filter)
 
-    async def do_change_source(self, interaction):
+    async def do_change_source(self, interaction, items=None, loot_count=0):
         balance = self._c.get_higher_balance()
-        backpack_items = await self.get_backpack_items()
+        backpack_items = await self.get_backpack_items() if items is None else items
         include_sets = Rarities.set in self._rarities
+        chests = self._c.treasure.ansi if self._current_view == "loot" else None
         await self.change_source(
-            source=PrettyBackpackSource(backpack_items, balance, include_sets, self._sold_count, self._sold_price),
+            source=PrettyBackpackSource(backpack_items, balance, include_sets, chests, self._convert_results,
+                                        self._sold_count, self._sold_price, loot_count),
             interaction=interaction)
 
     async def do_change_source_from_search(self, interaction):
         self._current_view = "search"
         self._equippable = False
         self._delta = False
-        self.reset_sell()
+        self.reset_contextual_state()
         await self.do_change_source(interaction)
+
+    async def do_open_loot(self, interaction, rarity, number):
+        opened_items = await self._open_loot_callback(self.ctx, self._c, rarity, number)
+        await self.do_change_source(interaction, opened_items, number)
 
     async def navigate_page(self, interaction, button):
         try:
@@ -1332,6 +1466,7 @@ class InteractiveBackpackFilterModal(discord.ui.Modal):
             item = self.__getattribute__(key)
             value = item['input'].value
             self.backpack_menu.set_stat_filter(key, value)
+        self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
     def build_input(self, label, value):
@@ -1357,6 +1492,7 @@ class InteractiveBackpackSearchModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         self.backpack_menu._search_text = self.search_input.value
+        self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
     def build_input(self, value):
@@ -1367,4 +1503,33 @@ class InteractiveBackpackSearchModal(discord.ui.Modal):
             max_length=100,
             min_length=0,
             required=False
+        )
+
+
+class InteractiveBackpackLootModal(discord.ui.Modal):
+    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context, rarity, max_value, title=None):
+        actual_title = "How many {} chests to open?".format(rarity) if title is None else title
+        super().__init__(title=actual_title)
+        self.ctx = ctx
+        self.backpack_menu = backpack_menu
+        self.rarity = rarity
+        self.max_value = max_value
+        self.loot_input = self.build_input()
+        self.add_item(self.loot_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.backpack_menu.do_open_loot(interaction, self.rarity, int(self.loot_input.value))
+
+    async def interaction_check(self, interaction: Interaction, /) -> bool:
+        if int(self.loot_input.value) < 1 or int(self.loot_input.value) > min(100, self.max_value):
+            raise Exception("User entered an incorrect loot box value")
+        return True
+
+    def build_input(self):
+        return discord.ui.TextInput(
+            label="Enter a value up to {}".format(min(100, self.max_value)),
+            style=discord.TextStyle.short,
+            max_length=100,
+            min_length=0,
+            required=True
         )

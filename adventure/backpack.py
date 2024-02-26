@@ -1033,6 +1033,8 @@ class BackPackCommands(AdventureMixin):
             await InteractiveBackpackMenu(
                 c=c,
                 sell_callback=self.interactive_sell_callback,
+                convert_callback=self.interactive_auto_convert_callback,
+                open_loot_callback=self.interactive_open_loot_callback,
                 source=PrettyBackpackSource(backpack_items, c.get_higher_balance()),
                 delete_message_after=True,
                 clear_reactions_after=True,
@@ -1067,3 +1069,42 @@ class BackPackCommands(AdventureMixin):
                     character.last_currency_check = time.time()
                     await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
                 return items_sold, total_price
+
+    async def interactive_auto_convert_callback(self, ctx, character):
+        if self.in_adventure(ctx):
+            return {}
+        else:
+            async with self.get_lock(ctx.author):
+                upgrade_mapping = {
+                    "normal": "rare",
+                    "rare": "epic",
+                    "epic": "legendary"
+                }
+                upgrade_step = 25
+                results = {}
+                for rarity, upgrade in upgrade_mapping.items():
+                    current_count = character.treasure[rarity].number
+                    number_up = current_count // upgrade_step
+                    character.treasure[rarity] -= number_up * upgrade_step
+                    character.treasure[upgrade] += number_up
+                    results[rarity] = number_up
+                await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
+                return results
+
+    async def interactive_open_loot_callback(self, ctx, character, rarity, number):
+        if self.in_adventure(ctx) or character.is_backpack_full(is_dev=is_dev(ctx.author)):
+            return []
+        else:
+            async with self.get_lock(ctx.author):
+                character.treasure[rarity] -= number
+                await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
+                items = await self._open_chests(ctx, Rarities.get_from_name(rarity), number, character)
+                results = []
+                async for item_name, item in AsyncIter(items.items(), steps=100):
+                    item_level = character.equip_level(item)
+                    cannot_equip = item_level > character.lvl
+                    i_data = {"name": item.name, "slot": item.slot, "att": item.att, "cha": item.cha, "int": item.int,
+                              "dex": item.dex, "luck": item.luck, "owned": item.owned, "degrade": item.degrade,
+                              "rarity": item.rarity, "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
+                    results.append(i_data)
+                return results

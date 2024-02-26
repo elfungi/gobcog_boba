@@ -1,6 +1,7 @@
 import logging
-from typing import List, MutableMapping, TypedDict
+from typing import Dict, List, MutableMapping, TypedDict
 
+import discord
 from redbot.core import commands
 
 log = logging.getLogger("red.cogs.adventure")
@@ -18,6 +19,7 @@ class Raid(TypedDict):
     amount: float
     num_ppl: int
     success: bool
+    auto_users: Dict[discord.Member, int]
 
 
 class AdventureResults:
@@ -27,7 +29,8 @@ class AdventureResults:
         self._num_raids: int = num_raids
         self._last_raids: MutableMapping[int, List[Raid]] = {}
 
-    def add_result(self, ctx: commands.Context, main_action: str, amount: float, num_ppl: int, success: bool):
+    def add_result(self, ctx: commands.Context, main_action: str, amount: float, num_ppl: int, success: bool,
+                   manual_users: List[discord.Member], auto_users: List[discord.Member]):
         """Add result to this object.
         :main_action: Main damage action taken by the adventurers
             (highest amount dealt). Should be either "attack" or
@@ -35,6 +38,7 @@ class AdventureResults:
         :amount: Amount dealt.
         :num_ppl: Number of people in adventure.
         :success: Whether adventure was successful or not.
+        :auto_users: List of users who should be taking auto actions.
         """
         if ctx.guild.id not in self._last_raids:
             self._last_raids[ctx.guild.id] = []
@@ -45,9 +49,35 @@ class AdventureResults:
             except IndexError:
                 pass
 
+        # add manual users to the next auto list
+        saved_auto_users = {}
+        for user in manual_users:
+            saved_auto_users[user] = self._num_raids
+        # auto users can only be added back in if they have been in here for less than num_raids
+        raids = self._last_raids.get(ctx.guild.id, [])
+        if len(raids) > 0:
+            raid = raids[-1]
+            for user in auto_users:
+                count = raid["auto_users"][user]
+                if count is None:
+                    # for some reason, if the user wasn't on the previous auto list, reset them
+                    saved_auto_users[user] = self._num_raids
+                elif count == 0:
+                    # no more auto for this user
+                    continue
+                else:
+                    saved_auto_users[user] = count - 1
+
         self._last_raids[ctx.guild.id].append(
-            Raid(main_action=main_action, amount=amount, num_ppl=num_ppl, success=success)
+            Raid(main_action=main_action, amount=amount, num_ppl=num_ppl, success=success, auto_users=saved_auto_users)
         )
+
+    def get_last_auto_users(self, ctx: commands.Context):
+        raids = self._last_raids.get(ctx.guild.id, [])
+        if len(raids) > 0:
+            return list(raids[-1]["auto_users"].keys())
+        else:
+            return []
 
     def get_stat_range(self, ctx: commands.Context) -> StatRange:
         """Return reasonable stat range for monster pool to have based
