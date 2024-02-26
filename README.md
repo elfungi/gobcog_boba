@@ -17,14 +17,14 @@ To start an adventure, use `[p]adventure` or `[p]a`. Reactions will appear under
 After taking an action in the battle, each user who manually participated will be placed on the auto-battle list.  
 
 These auto users will help participate in the next set number of fights based on the highest count action taken (i.e. if there are more Attackers than Casters, every Auto Battler will attack).  
-Clerics are an exception to his rule - they will always perform the Pray action, and non-Clerics will never Pray.  
-If any action sizes are equal, the order of priority for auto battling is: Attack -> Talk -> Magic.
+Clerics are an exception to this rule - they will always perform the Pray action, and non-Clerics will never Pray.  
+If any action sizes are equal, the order of priority for auto battling is Attack -> Magic -> Talk.
 
 Auto-battlers will gain 50% of the experience and gold from the encounter, but will receive the full amount of treasure.  
 
 After 20 auto-battles without any manual action, the user will no longer participate in the battle automatically.  
-Every time a user takes a manual option (i.e. pressing Attack, Magic, Talk, or Pray again), they will have their auto-battle count reset to fresh.  
-A user can also manually remove themselves from the Auto list but clicking on the Auto action button and confirming to Run.
+Every time a user takes a manual option (i.e. pressing Attack, Magic, Talk, or Pray again), they will have their auto-battle count reset.  
+A user can also manually remove themselves from the Auto list by clicking on the Auto action button and confirming to Run.
 
 ## Hero/Heroclass
 
