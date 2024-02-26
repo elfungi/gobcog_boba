@@ -123,6 +123,7 @@ class Adventure(
         self.emojis.skills.wizzard = self.emojis.magic_crit
         self.emojis.skills.bard = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"
         self.emojis.hp = "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}"
+        self.emojis.auto = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
         self.emojis.dipl = self.emojis.talk
         self.red_340_or_newer = version_info >= VersionInfo.from_str("3.4.0")
 
@@ -2652,6 +2653,13 @@ class Adventure(
 
         return await self._genitem(c._ctx, rarity)
 
+    def format_auto_user_name(self, ctx, user):
+        session = self._sessions.get(ctx.guild.id)
+        if user in session.auto:
+            return "{} {}".format(user.mention, self.emojis.auto)
+        else:
+            return user.mention
+
     async def _reward(self, ctx: commands.Context, userlist, amount: int, modif: float, special: Treasure) -> str:
         """
         text += await self._reward(
@@ -2725,7 +2733,7 @@ class Adventure(
                 usercp += petcp
                 self._rewards[user.id]["cp"] = usercp
                 reward_message += "{mention} gained {xp} XP and {coin} {currency}.\n".format(
-                    mention=user.mention if can_embed else f"{bold(user.display_name)}",
+                    mention=self.format_auto_user_name(ctx, user) if can_embed else f"{bold(user.display_name)}",
                     xp=humanize_number(int(userxp)),
                     coin=humanize_number(int(usercp)),
                     currency=currency_name,
@@ -2739,7 +2747,7 @@ class Adventure(
 
             else:
                 reward_message += "{mention} gained {xp} XP and {coin} {currency}.\n".format(
-                    mention=user.mention,
+                    mention=self.format_auto_user_name(ctx, user),
                     xp=humanize_number(int(userxp)),
                     coin=humanize_number(int(usercp)),
                     currency=currency_name,
