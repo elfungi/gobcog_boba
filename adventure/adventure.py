@@ -99,7 +99,7 @@ class Adventure(
         self.bot = bot
         bank._init(bot)
         self._last_trade = {}
-        self._adv_results = AdventureResults(10)  # 10 results is about 50-60min of gameplay
+        self._adv_results = AdventureResults(20)
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}\N{VARIATION SELECTOR-16}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
@@ -898,6 +898,7 @@ class Adventure(
             no_monster = random.randint(0, 100) == 25
         # if ctx.author.id in DEV_LIST:
         # timer = 20
+        auto_users = self._adv_results.get_last_auto_users(ctx)
         self._sessions[ctx.guild.id] = GameSession(
             ctx=ctx,
             cog=self,
@@ -915,6 +916,7 @@ class Adventure(
             monster_modified_stats=self._dynamic_monster_stats(ctx, monster_roster[challenge]),
             easy_mode=easy_mode,
             no_monster=no_monster,
+            auto=auto_users
         )
         adventure_msg = (
             f"{adventure_msg}{text}\n{random.choice(self.LOCATIONS)}\n"
@@ -940,7 +942,7 @@ class Adventure(
             ).format(
                 attr=session.attribute,
                 chall=session.challenge,
-                reactions=_("**Fight** - **Spell** - **Talk** - **Pray** - **Run**"),
+                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
             )
             basilisk_text = _(
                 "but **a{attr} {chall}** stepped out looking around. \n\n"
@@ -950,7 +952,7 @@ class Adventure(
             ).format(
                 attr=session.attribute,
                 chall=session.challenge,
-                reactions=_("**Fight** - **Spell** - **Talk** - **Pray** - **Run**"),
+                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
             )
             normal_text = _(
                 "but **a{attr} {chall}** "
@@ -962,7 +964,7 @@ class Adventure(
                 attr=session.attribute,
                 chall=session.challenge,
                 threat=random.choice(self.THREATEE),
-                reactions=_("**Fight** - **Spell** - **Talk** - **Pray** - **Run**"),
+                reactions=_("**Attack** - **Talk** - **Magic** - **Pray***"),
             )
 
             embed = discord.Embed(colour=discord.Colour.blurple())
@@ -1006,7 +1008,7 @@ class Adventure(
                 "Heroes have {time} minutes to participate via reaction:"
                 "\n\nReact with: {reactions}"
             ).format(
-                reactions=_("**Fight** - **Spell** - **Talk** - **Pray** - **Run**"),
+                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
                 time=timeout // 60,
             )
             if use_embeds:
@@ -1355,14 +1357,14 @@ class Adventure(
         fight_list = list(set(session.fight))
         talk_list = list(set(session.talk))
         pray_list = list(set(session.pray))
-        run_list = list(set(session.run))
         magic_list = list(set(session.magic))
+        auto_list = list(set(session.auto))
 
         self._sessions[ctx.guild.id].fight = fight_list
         self._sessions[ctx.guild.id].talk = talk_list
         self._sessions[ctx.guild.id].pray = pray_list
-        self._sessions[ctx.guild.id].run = run_list
         self._sessions[ctx.guild.id].magic = magic_list
+        self._sessions[ctx.guild.id].auto = auto_list
         fight_name_list = []
         wizard_name_list = []
         talk_name_list = []
@@ -1377,6 +1379,7 @@ class Adventure(
         for user in pray_list:
             pray_name_list.append(f"{bold(user.display_name)}")
 
+        # TODO: might need to handle these text strings
         fighters_final_string = _(" and ").join(
             [", ".join(fight_name_list[:-1]), fight_name_list[-1]] if len(fight_name_list) > 2 else fight_name_list
         )
@@ -1392,20 +1395,20 @@ class Adventure(
         if session.no_monster:
             treasure = await self.get_treasure(session, 0, 0)
 
-            session.participants = set(fight_list + magic_list + talk_list + pray_list + run_list + fumblelist)
+            session.participants = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
 
             participants = {
                 "fight": fight_list,
                 "spell": magic_list,
                 "talk": talk_list,
                 "pray": pray_list,
-                "run": run_list,
+                "auto": auto_list,
                 "fumbles": fumblelist,
             }
             text = ""
             text += await self._reward(
                 ctx,
-                [u for u in fight_list + magic_list + pray_list + talk_list if u not in fumblelist],
+                [u for u in fight_list + magic_list + pray_list + talk_list + auto_list if u not in fumblelist],
                 500 + int(500 * (0.25 * len(session.participants))),
                 0,
                 treasure,
@@ -1429,17 +1432,11 @@ class Adventure(
                         c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})
                         parsed_users.append(user)
                     await self.config.user(user).set(await c.to_json(ctx, self.config))
-            attack, diplomacy, magic, run_msg = await self.handle_run(
-                ctx.guild.id, attack, diplomacy, magic, shame=True
-            )
-            if run_msg:
-                run_msg = _("It's a shame for the following adventurers...\n{run_msg}\n").format(run_msg=run_msg)
 
             output = _(
-                "All adventurers prepared for an epic adventure, but they soon realise all this treasure was unprotected!\n{run_msg}{text}"
+                "All adventurers prepared for an epic adventure, but they soon realise all this treasure was unprotected!\n{text}"
             ).format(
-                text=text,
-                run_msg=run_msg,
+                text=text
             )
             output = pagify(output, page_length=1900)
             await calc_msg.delete()
@@ -1447,19 +1444,18 @@ class Adventure(
                 await smart_embed(ctx, i, success=True)
             return
 
-        people = len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list) + len(run_list)
-        attack, diplomacy, magic, run_msg = await self.handle_run(ctx.guild.id, attack, diplomacy, magic)
+        people = len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list) + len(auto_list)
         failed = await self.handle_basilisk(ctx)
-        fumblelist, attack, diplomacy, magic, pray_msg = await self.handle_pray(
+        handled_pray_list, fumblelist, attack, diplomacy, magic, pray_msg = await self.handle_pray(
             ctx.guild.id, fumblelist, attack, diplomacy, magic
         )
-        fumblelist, critlist, diplomacy, talk_msg = await self.handle_talk(
+        handled_talk_list, fumblelist, critlist, diplomacy, talk_msg = await self.handle_talk(
             ctx.guild.id, fumblelist, critlist, diplomacy
         )
-        fumblelist, critlist, attack, magic, fight_msg = await self.handle_fight(
+        handled_fight_list, handled_magic_list, fumblelist, critlist, attack, magic, fight_msg = await self.handle_fight(
             ctx.guild.id, fumblelist, critlist, attack, magic
         )
-        result_msg = run_msg + pray_msg + talk_msg + fight_msg
+        result_msg = pray_msg + talk_msg + fight_msg
         challenge_attrib = session.attribute
         hp = max(
             int(session.monster_modified_stats["hp"] * self.ATTRIBS[challenge_attrib][0] * session.monster_stats), 1
@@ -1490,10 +1486,12 @@ class Adventure(
                 diplomacy=humanize_number(diplomacy),
                 int_dipl=humanize_number(dipl),
             )
+
+        manual_participants = fight_list + talk_list + magic_list + pray_list
         if dmg_dealt >= diplomacy:
-            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain)
+            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, manual_participants, auto_list)
         else:
-            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded)
+            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, manual_participants, auto_list)
         result_msg = result_msg + "\n" + damage_str + diplo_str
 
         await calc_msg.delete()
@@ -1503,32 +1501,8 @@ class Adventure(
             success = True
         # treasure = [0, 0, 0, 0, 0, 0]
         treasure = await self.get_treasure(session, hp, dipl, slain, persuaded, failed, crit_bonus)
-        if run_list:
-            users = run_list
-            for user in users:
-                try:
-                    c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-                except Exception as exc:
-                    log.exception("Error with the new character sheet", exc_info=exc)
-                    continue
-                if c.bal > 0:
-                    multiplier = 1 / 3
-                    if c._dex < 0:
-                        dex = min(1 / abs(c._dex), 1)
-                    else:
-                        dex = max(c._dex // 10, 1)
-                    multiplier = multiplier / dex
-                    loss = round(c.bal * multiplier)
-                    if loss > c.bal:
-                        loss = c.bal
-                    if user not in [u for u, t in repair_list]:
-                        repair_list.append([user, loss])
-                        if c.bal > loss:
-                            await bank.withdraw_credits(user, loss)
-                        else:
-                            await bank.set_balance(user, 0)
         if session.miniboss and failed:
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + fumblelist)
+            session.participants = set(fight_list + talk_list + pray_list + magic_list + auto_list + fumblelist)
             currency_name = await bank.get_currency_name(
                 ctx.guild,
             )
@@ -1576,7 +1550,7 @@ class Adventure(
             return await smart_embed(ctx, result_msg)
         if session.miniboss and not slain and not persuaded:
             lost = True
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + fumblelist)
+            session.participants = set(fight_list + talk_list + pray_list + magic_list + auto_list + fumblelist)
             currency_name = await bank.get_currency_name(
                 ctx.guild,
             )
@@ -1628,13 +1602,13 @@ class Adventure(
         currency_name = await bank.get_currency_name(ctx.guild)
         if people == 1:
             if slain:
-                group = fighters_final_string if len(fight_list) == 1 else wizards_final_string
+                group = fighters_final_string if len(handled_fight_list) == 1 else wizards_final_string
                 text = _("{b_group} has slain the {chall} in an epic battle!").format(
                     b_group=group, chall=session.challenge
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
+                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list if u not in fumblelist],
                     amount,
                     round(((attack if group == fighters_final_string else magic) / hp) * 0.25),
                     treasure,
@@ -1646,7 +1620,7 @@ class Adventure(
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    [u for u in handled_talk_list + handled_pray_list if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
@@ -1657,7 +1631,7 @@ class Adventure(
                 currency_name = await bank.get_currency_name(
                     ctx.guild,
                 )
-                users = set(fight_list + magic_list + talk_list + pray_list + fumblelist)
+                users = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
                 for user in users:
                     try:
                         c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
@@ -1707,7 +1681,7 @@ class Adventure(
                     god = await self.config.god_name()
                     if await self.config.guild(ctx.guild).god_name():
                         god = await self.config.guild(ctx.guild).god_name()
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery, "
@@ -1722,7 +1696,7 @@ class Adventure(
                             god=god,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery and "
@@ -1735,7 +1709,7 @@ class Adventure(
                             god=god,
                         )
                 else:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with insults and "
@@ -1747,13 +1721,13 @@ class Adventure(
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
                         ).format(b_group=group, chall=session.challenge, b_talkers=talkers_final_string)
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list + talk_list if u not in fumblelist],
+                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list + handled_talk_list if u not in fumblelist],
                     amount,
                     round(((dmg_dealt / hp) + (diplomacy / dipl)) * 0.25),
                     treasure,
@@ -1772,15 +1746,15 @@ class Adventure(
                     )
                 text += await self._reward(
                     ctx,
-                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    [u for u in handled_talk_list + handled_pray_list if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
                 )
 
             if slain and not persuaded:
-                if len(pray_list) > 0:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                if len(handled_pray_list) > 0:
+                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers} and "
@@ -1792,7 +1766,7 @@ class Adventure(
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
                         text = _(
                             "{b_group} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers}."
@@ -1802,7 +1776,7 @@ class Adventure(
                             b_preachers=preachermen_final_string,
                         )
                 else:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with {b_wizard} chanting magical incantations."
@@ -1812,13 +1786,13 @@ class Adventure(
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
                         text = _("{b_group} killed the {chall} in an epic fight.").format(
                             b_group=group, chall=session.challenge
                         )
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
+                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list if u not in fumblelist],
                     amount,
                     round((dmg_dealt / hp) * 0.25),
                     treasure,
@@ -1829,7 +1803,7 @@ class Adventure(
                 currency_name = await bank.get_currency_name(
                     ctx.guild,
                 )
-                users = set(fight_list + magic_list + talk_list + pray_list + fumblelist)
+                users = set(handled_fight_list + handled_magic_list + handled_talk_list + handled_pray_list + fumblelist)
                 for user in users:
                     try:
                         c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
@@ -1881,14 +1855,14 @@ class Adventure(
             if img_sent:
                 img_sent = None
         await self._data_check(ctx)
-        session.participants = set(fight_list + magic_list + talk_list + pray_list + run_list + fumblelist)
+        session.participants = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
 
         participants = {
             "fight": fight_list,
             "spell": magic_list,
             "talk": talk_list,
             "pray": pray_list,
-            "run": run_list,
+            "auto": auto_list,
             "fumbles": fumblelist,
         }
         parsed_users = []
@@ -1902,7 +1876,7 @@ class Adventure(
                 current_val = c.adventures.get(action_name, 0)
                 c.adventures.update({action_name: current_val + 1})
                 if user not in parsed_users:
-                    special_action = "loses" if lost or user in participants["run"] else "wins"
+                    special_action = "loses" if lost else "wins"
                     current_val = c.adventures.get(special_action, 0)
                     c.adventures.update({special_action: current_val + 1})
                     c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})
@@ -1951,6 +1925,15 @@ class Adventure(
         ctx = session.ctx
         fight_list = list(set(session.fight))
         magic_list = list(set(session.magic))
+
+        len_fight_list = len(session.fight)
+        len_magic_list = len(session.magic)
+
+        if len_fight_list >= len(session.magic) and len_fight_list >= len(session.talk):
+            fight_list += await self.filter_clerics_from_auto(ctx)
+        elif len_magic_list > len(session.fight) and len_magic_list >= len(session.talk):
+            magic_list += await self.filter_clerics_from_auto(ctx)
+
         attack_list = list(set(fight_list + magic_list))
         pdef = max(session.monster_modified_stats["pdef"], 0.5)
         mdef = max(session.monster_modified_stats["mdef"], 0.5)
@@ -1962,7 +1945,7 @@ class Adventure(
             msg = ""
             report = _("Attack Party: \n\n")
         else:
-            return (fumblelist, critlist, attack, magic, "")
+            return (fight_list, magic_list, fumblelist, critlist, attack, magic, "")
 
         for user in fight_list:
             try:
@@ -2126,29 +2109,47 @@ class Adventure(
             report += _("No one!")
         msg += report + "\n"
         for user in fumblelist:
-            if user in session.fight:
+            if user in fight_list:
                 if session.insight[0] == 1 and user.id != session.insight[1].user.id:
                     attack -= int(session.insight[1].total_att * 0.2)
-                session.fight.remove(user)
-            elif user in session.magic:
+                fight_list.remove(user)
+            elif user in magic_list:
                 if session.insight[0] == 1 and user.id != session.insight[1].user.id:
                     attack -= int(session.insight[1].total_int * 0.2)
-                session.magic.remove(user)
-        return (fumblelist, critlist, attack, magic, msg)
+                magic_list.remove(user)
+        return (fight_list, magic_list, fumblelist, critlist, attack, magic, msg)
 
     async def handle_pray(self, guild_id, fumblelist, attack, diplomacy, magic):
         session = self._sessions[guild_id]
         ctx = session.ctx
+        pray_list = list(set(session.pray + session.auto))  # add auto users to this list to check for clerics
         talk_list = list(set(session.talk))
-        pray_list = list(set(session.pray))
         fight_list = list(set(session.fight))
         magic_list = list(set(session.magic))
+
+        len_fight_list = len(fight_list)
+        len_magic_list = len(magic_list)
+        len_talk_list = len(talk_list)
+        if len_fight_list >= len_magic_list and len_fight_list >= len_talk_list:
+            fight_list += await self.filter_clerics_from_auto(ctx)
+        elif len_magic_list > len_fight_list and len_magic_list >= len_talk_list:
+            magic_list += await self.filter_clerics_from_auto(ctx)
+        elif len_talk_list > len_fight_list and len_talk_list > len_magic_list:
+            talk_list += await self.filter_clerics_from_auto(ctx)
+        # get updated length
+        len_fight_list = len(fight_list)
+        len_talk_list = len(talk_list)
+        len_magic_list = len(magic_list)
+
+        print(len_fight_list, len_magic_list, len_talk_list)
+
         god = await self.config.god_name()
         guild_god_name = await self.config.guild(self.bot.get_guild(guild_id)).god_name()
         if guild_god_name:
             god = guild_god_name
         msg = ""
         failed_emoji = self.emojis.fumble
+        handled_pray_list = []
         for user in pray_list:
             try:
                 c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
@@ -2156,9 +2157,10 @@ class Adventure(
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
 
-            len_fight_list = len(fight_list)
-            len_talk_list = len(talk_list)
-            len_magic_list = len(magic_list)
+            if user in session.auto and c.hc is not HeroClasses.cleric:
+                continue
+            handled_pray_list.append(user)
+
             if c.rebirths >= HC_VETERAN_RANK:
                 len_fight_list = len_fight_list + 2 if len_fight_list > 0 else 0
                 len_talk_list = len_talk_list + 2 if len_talk_list > 0 else 0
@@ -2178,7 +2180,7 @@ class Adventure(
                     mod = 45
                 roll = max(random.randint((1 + mod), max_roll), 1)
                 roll_perc = roll / max_roll
-                if len(fight_list + talk_list + magic_list) == 0:
+                if len_fight_list + len_magic_list + len_talk_list == 0:
                     msg += _("{} blessed like a madman but nobody was there to receive it.\n").format(
                         bold(user.display_name)
                     )
@@ -2257,7 +2259,7 @@ class Adventure(
                     )
             else:
                 roll = random.randint(1, 10)
-                if len(fight_list + talk_list + magic_list) == 0:
+                if len_fight_list + len_talk_list + len_magic_list == 0:
                     msg += _("{} prayed like a madman but nobody else helped them.\n").format(bold(user.display_name))
 
                 elif roll == 5:
@@ -2293,21 +2295,27 @@ class Adventure(
                     fumblelist.append(user)
                     msg += _("{}{}'s prayers went unanswered.\n").format(failed_emoji, bold(user.display_name))
         for user in fumblelist:
-            if user in pray_list:
-                pray_list.remove(user)
-        return (fumblelist, attack, diplomacy, magic, msg)
+            if user in handled_pray_list:
+                handled_pray_list.remove(user)
+        return (handled_pray_list, fumblelist, attack, diplomacy, magic, msg)
 
     async def handle_talk(self, guild_id, fumblelist, critlist, diplomacy):
         session = self._sessions[guild_id]
         ctx = session.ctx
         cdef = max(session.monster_modified_stats["cdef"], 0.5)
         talk_list = list(set(session.talk))
-        if len(talk_list) >= 1:
+        len_talk_list = len(talk_list)
+
+        if len_talk_list > len(session.fight) and len_talk_list > len(session.magic):
+            talk_list += await self.filter_clerics_from_auto(ctx)
+
+        if len_talk_list >= 1:
             report = _("Talking Party: \n\n")
             msg = ""
             fumble_count = 0
         else:
-            return (fumblelist, critlist, diplomacy, "")
+            return (talk_list, fumblelist, critlist, diplomacy, "")
+
         failed_emoji = self.emojis.fumble
         for user in talk_list:
             try:
@@ -2385,8 +2393,8 @@ class Adventure(
             if user in talk_list:
                 if session.insight[0] == 1 and user.id != session.insight[1].user.id:
                     diplomacy -= int(session.insight[1].total_cha * 0.2)
-                session.talk.remove(user)
-        return (fumblelist, critlist, diplomacy, msg)
+                talk_list.remove(user)
+        return (talk_list, fumblelist, critlist, diplomacy, msg)
 
     async def handle_basilisk(self, ctx: commands.Context):
         session = self._sessions[ctx.guild.id]
@@ -2395,7 +2403,8 @@ class Adventure(
         talk_list = list(set(session.talk))
         pray_list = list(set(session.pray))
         magic_list = list(set(session.magic))
-        participants = list(set(fight_list + talk_list + pray_list + magic_list))
+        auto_list = list(set(session.auto))
+        participants = list(set(fight_list + talk_list + pray_list + magic_list + auto_list))
         if session.miniboss:
             failed = True
             req_item, slot = session.miniboss["requirements"]
@@ -2426,6 +2435,19 @@ class Adventure(
         else:
             failed = False
         return failed
+
+    async def filter_clerics_from_auto(self, ctx):
+        session = self._sessions[ctx.guild.id]
+        results = []
+        for user in session.auto:
+            try:
+                c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                continue
+            if c.hc is not HeroClasses.cleric:
+                results.append(user)
+        return results
 
     async def _add_rewards(
         self, ctx: commands.Context, user: Union[discord.Member, discord.User], exp: int, cp: int, special: Treasure
@@ -2677,8 +2699,13 @@ class Adventure(
             base_usercp = usercp
             userxp = int(base_userxp * (c.gear_set_bonus.get("xpmult", 1) + daymult + session_bonus))
             usercp = int(base_usercp * (c.gear_set_bonus.get("cpmult", 1) + daymult))
+
+            if user in session.auto:
+                userxp = userxp // 2
+                usercp = usercp // 2
             newxp += userxp
             newcp += usercp
+
             # bonus roll for rangers - 45% base chance to proc + 1% every 20 charisma
             roll = random.randint(1, 100)
             target_number = 45 + int(c.total_cha / 20)
@@ -2686,10 +2713,14 @@ class Adventure(
                 roll = 1  # pick 1 to guarantee bonus if pet allows it
             if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
                 petxp = int(base_userxp * c.heroclass["pet"]["bonus"])
+                petcp = int(base_usercp * c.heroclass["pet"]["bonus"])
+
+                if user in session.auto:
+                    petxp = petxp // 2
+                    petcp = petcp // 2
                 newxp += petxp
                 userxp += petxp
                 self._rewards[user.id]["xp"] = userxp
-                petcp = int(base_usercp * c.heroclass["pet"]["bonus"])
                 newcp += petcp
                 usercp += petcp
                 self._rewards[user.id]["cp"] = usercp
