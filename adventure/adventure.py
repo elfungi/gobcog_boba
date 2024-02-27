@@ -900,6 +900,15 @@ class Adventure(
         # if ctx.author.id in DEV_LIST:
         # timer = 20
         auto_users = self._adv_results.get_last_auto_users(ctx)
+        for user in auto_users:
+            try:
+                c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
+                if c.do_not_disturb:
+                    auto_users.remove(user)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                continue
+
         self._sessions[ctx.guild.id] = GameSession(
             ctx=ctx,
             cog=self,
@@ -1380,7 +1389,6 @@ class Adventure(
         for user in pray_list:
             pray_name_list.append(f"{bold(user.display_name)}")
 
-        # TODO: might need to handle these text strings
         fighters_final_string = _(" and ").join(
             [", ".join(fight_name_list[:-1]), fight_name_list[-1]] if len(fight_name_list) > 2 else fight_name_list
         )
@@ -1488,13 +1496,7 @@ class Adventure(
                 int_dipl=humanize_number(dipl),
             )
 
-        manual_participants = fight_list + talk_list + magic_list + pray_list
-        if dmg_dealt >= diplomacy:
-            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, manual_participants, auto_list)
-        else:
-            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, manual_participants, auto_list)
         result_msg = result_msg + "\n" + damage_str + diplo_str
-
         await calc_msg.delete()
         text = ""
         success = False
@@ -1867,6 +1869,7 @@ class Adventure(
             "fumbles": fumblelist,
         }
         parsed_users = []
+        do_not_disturbed_users = []
         for action_name, action in participants.items():
             for user in action:
                 try:
@@ -1874,6 +1877,8 @@ class Adventure(
                 except Exception as exc:
                     log.exception("Error with the new character sheet", exc_info=exc)
                     continue
+                if c.do_not_disturb:
+                    do_not_disturbed_users.append(user)
                 current_val = c.adventures.get(action_name, 0)
                 c.adventures.update({action_name: current_val + 1})
                 if user not in parsed_users:
@@ -1883,6 +1888,14 @@ class Adventure(
                     c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})
                     parsed_users.append(user)
                 await self.config.user(user).set(await c.to_json(ctx, self.config))
+
+        manual_participants = fight_list + talk_list + magic_list + pray_list
+        if dmg_dealt >= diplomacy:
+            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, manual_participants, auto_list,
+                                         do_not_disturbed_users)
+        else:
+            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, manual_participants, auto_list,
+                                         do_not_disturbed_users)
 
     async def handle_run(self, guild_id, attack, diplomacy, magic, shame=False):
         runners = []
@@ -1971,7 +1984,7 @@ class Adventure(
 
             att_value = c.total_att
             rebirths = c.rebirths * (3 if c.hc is HeroClasses.berserker else 1)
-            if roll_perc < 0.10:
+            if roll_perc < 0.10 or (roll + att_value) <= 0:
                 if c.hc is HeroClasses.berserker and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
@@ -2046,7 +2059,7 @@ class Adventure(
 
             int_value = c.total_int
             rebirths = c.rebirths * (3 if c.hc is HeroClasses.wizard else 1)
-            if roll_perc < 0.10:
+            if roll_perc < 0.10 or (roll + int_value) <= 0:
                 # fumble condition
                 msg += _("{}{} almost set themselves on fire.\n").format(failed_emoji, bold(user.display_name))
                 fumblelist.append(user)
@@ -2141,8 +2154,6 @@ class Adventure(
         len_fight_list = len(fight_list)
         len_talk_list = len(talk_list)
         len_magic_list = len(magic_list)
-
-        print(len_fight_list, len_magic_list, len_talk_list)
 
         god = await self.config.god_name()
         guild_god_name = await self.config.guild(self.bot.get_guild(guild_id)).god_name()
@@ -2337,7 +2348,7 @@ class Adventure(
             dipl_value = c.total_cha
             rebirths = c.rebirths * (3 if c.hc is HeroClasses.bard else 1)
             roll_perc = roll / max_roll
-            if roll_perc < 0.10:
+            if roll_perc < 0.10 or (roll + dipl_value) <= 0:
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
                     dipl_bonus = int((roll - bonus + dipl_value + rebirths))

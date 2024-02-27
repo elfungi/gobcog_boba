@@ -486,3 +486,32 @@ class CharacterCommands(AdventureMixin):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
 
         await ctx.invoke(self.backpack_equip, equip_item=item)
+
+    @commands.hybrid_command(name="auto")
+    async def auto_toggle(self, ctx: commands.Context, *, toggle: str = "on"):
+        """This puts your character into a state where you will no longer automatically rejoin the battle.
+        You will not leave the current adventure with this command.
+
+        `[p]auto on` to turn on auto mode.
+        `[p]auto off` to disable auto mode.
+        """
+        await ctx.defer()
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                return
+            msg = "{}, please specify on or off for auto mode."
+            if toggle.lower() == "on":
+                c.do_not_disturb = False
+                msg = "{} enabled auto mode.\nYou will join auto battle again once you rejoin an adventure manually."
+            elif toggle.lower() == "off":
+                c.do_not_disturb = True
+                msg = (
+                    "{} disabled auto mode."
+                    "\nThis will prevent you from being added to the auto list until you re-enable auto."
+                    "\nYour current adventure in progress will still finish unless you run away."
+                )
+            await smart_embed(ctx, _(msg).format(escape(ctx.author.display_name)))
+            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))

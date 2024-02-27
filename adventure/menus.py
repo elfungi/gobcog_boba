@@ -551,7 +551,6 @@ class PrettyBackpackSource(menus.ListPageSource):
                 msg += " chest(s).```"
         elif self._loot_count > 0:
             # Opened chests
-            print(self._items_len, self.entries)
             if self._items_len == 0:
                 # Tried to open chests but in adventure or backpack is full
                 msg += "```md\n* You tried to go open your loot but you're either occupied or your backpack is full.```"
@@ -1026,6 +1025,7 @@ class InteractiveBackpackMenu(BaseMenu):
             sell_callback: Any,
             convert_callback: Any,
             open_loot_callback: Any,
+            auto_toggle_callback: Any,
             clear_reactions_after: bool = True,
             delete_message_after: bool = False,
             timeout: int = 180,
@@ -1044,6 +1044,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._sell_callback = sell_callback
         self._convert_callback = convert_callback
         self._open_loot_callback = open_loot_callback
+        self._auto_toggle_callback = auto_toggle_callback
         self._current_view = ""
         self._rarities = []
         self._stats = self.initial_stats_filters()
@@ -1159,14 +1160,21 @@ class InteractiveBackpackMenu(BaseMenu):
             self.clear_filters.disabled = False
             self.clear_filters.style = discord.ButtonStyle.red
 
+        if self._c.do_not_disturb:
+            self.auto_toggle.label = "Turn Auto-Battle On \u200b"
+            self.auto_toggle.style = discord.ButtonStyle.red
+        else:
+            self.auto_toggle.label = "Turn Auto-Battle Off"
+            self.auto_toggle.style = discord.ButtonStyle.green
+
         self.update_contextual_button()
 
     def update_contextual_button(self):
         label_space_pre = "\u200b "
         label_space_post = " \u200b"
-        sell_all_label = str(label_space_pre * 15) + "Sell All" + str(label_space_post * 21)
-        confirm_sell_label = str(label_space_pre * 17) + "Confirm Sell" + str(label_space_post * 16)
-        auto_convert_label = str(label_space_pre * 15) + "Auto-Convert" + str(label_space_post * 15)
+        sell_all_label = str(label_space_pre * 7) + "Sell All" + str(label_space_post * 8)
+        confirm_sell_label = str(label_space_pre * 6) + "Confirm Sell" + str(label_space_post * 6)
+        auto_convert_label = str(label_space_pre * 5) + "Auto-Convert" + str(label_space_post * 4)
 
         if self._current_view != "loot":
             if self._sold_count == SELL_CONFIRM_AMOUNT:
@@ -1225,6 +1233,11 @@ class InteractiveBackpackMenu(BaseMenu):
             # auto-convert button
             self._convert_results = await self._convert_callback(self.ctx, self._c)
             await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Auto Toggle", row=0)
+    async def auto_toggle(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self._c = await self._auto_toggle_callback(self.ctx, self._c)
+        await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.primary,
                        label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Backpack\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
@@ -1410,7 +1423,7 @@ class InteractiveBackpackMenu(BaseMenu):
     async def do_change_source(self, interaction, items=None, loot_count=0):
         balance = self._c.get_higher_balance()
         backpack_items = await self.get_backpack_items() if items is None else items
-        include_sets = Rarities.set in self._rarities
+        include_sets = Rarities.set in self._rarities or self._current_view == "loot"
         chests = self._c.treasure.ansi if self._current_view == "loot" else None
         await self.change_source(
             source=PrettyBackpackSource(backpack_items, balance, include_sets, chests, self._convert_results,
@@ -1425,6 +1438,7 @@ class InteractiveBackpackMenu(BaseMenu):
         await self.do_change_source(interaction)
 
     async def do_open_loot(self, interaction, rarity, number):
+        self._convert_results = None  # reset convert results whenever loot is opened
         opened_items = await self._open_loot_callback(self.ctx, self._c, rarity, number)
         await self.do_change_source(interaction, opened_items, number)
 

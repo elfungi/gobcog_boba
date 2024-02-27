@@ -24,9 +24,28 @@ log = logging.getLogger("red.cogs.adventure")
 
 class Negaverse(AdventureMixin):
     """This class will handle negaverse interactions"""
+    @commands.hybrid_command(name="negaverse_percent", aliases=["nv%"], cooldown_after_parsing=True)
+    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
+    @commands.guild_only()
+    async def _negaverse_percent_command(self, ctx: commands.Context, percentage: int):
+        """This will send you to fight a nega-member!
+        Specify a percentage number (e.g. 50) to send from your total balance.
+        """
+        if self.in_adventure(ctx):
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(
+                ctx,
+                _("You tried to teleport to another dimension but the monster ahead did not give you a chance."),
+                ephemeral=True,
+            )
+
+        bal = await bank.get_balance(ctx.author)
+        offering = round(float(percentage / 100) * bal)
+        await self._negaverse(ctx, offering)
+
 
     @commands.hybrid_command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     @commands.guild_only()
     async def _negaverse_command(self, ctx: commands.Context, offering: int):
         """This will send you to fight a nega-member!"""
@@ -133,8 +152,8 @@ class Negaverse(AdventureMixin):
             else:
                 entry_msg = _(
                     "Shadowy hands reach out to take your offering from you and a swirling "
-                    "black void slowly grows and engulfs you, transporting you to the negaverse."
-                )
+                    "black void slowly grows and engulfs you, transporting you to the negaverse with {offering} {currency} in hand."
+                ).format(offering=humanize_number(offering), currency=currency_name)
                 await nv_msg.edit(content=entry_msg, view=None)
                 await self._clear_react(nv_msg)
                 await bank.withdraw_credits(ctx.author, offering)

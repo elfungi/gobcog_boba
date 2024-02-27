@@ -270,7 +270,6 @@ class TreasureChest:
     def __add__(self, chest: Union[TreasureChest, int]) -> TreasureChest:
         if isinstance(chest, int):
             self.number += chest
-            print(f"adding {chest}")
             return self
         if chest.rarity is not self.rarity:
             raise TypeError(
