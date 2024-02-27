@@ -965,7 +965,7 @@ class Adventure(
                 attr=session.attribute,
                 chall=session.challenge,
                 threat=random.choice(self.THREATEE),
-                reactions=_("**Attack** - **Talk** - **Magic** - **Pray***"),
+                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
             )
 
             embed = discord.Embed(colour=discord.Colour.blurple())
@@ -1427,7 +1427,7 @@ class Adventure(
 
                     c.adventures.update({action_name: current_val + 1})
                     if user not in parsed_users:
-                        special_action = "loses" if lost or user in participants["run"] else "wins"
+                        special_action = "loses" if lost else "wins"
                         current_val = c.adventures.get(special_action, 0)
                         c.adventures.update({special_action: current_val + 1})
                         c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})

@@ -953,7 +953,7 @@ class ClassAbilities(AdventureMixin):
                 ignored_rarities = [Rarities.forged, Rarities.set, Rarities.event]
                 if c.rebirths < HC_VETERAN_RANK:
                     ignored_rarities.append(Rarities.ascended)
-                    ascended_forge_msg += _("\n\nAscended items will be forgeable after 30 rebirths.")
+                    ascended_forge_msg += _("\n\nAscended items will be forgeable after 20 rebirths.")
                 consumed = []
                 forgeables_items = [str(i) for n, i in c.backpack.items() if i.rarity not in ignored_rarities]
                 if len(forgeables_items) <= 1:
