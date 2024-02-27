@@ -351,6 +351,7 @@ class Character:
         self.daily_bonus = kwargs.pop(
             "daily_bonus_mapping", {"1": 0, "2": 0, "3": 0.5, "4": 0, "5": 0.5, "6": 1.0, "7": 1.0}
         )
+        self.do_not_disturb = kwargs.pop("do_not_disturb", False)
 
     @property
     def hc(self) -> HeroClasses:
@@ -1558,6 +1559,7 @@ class Character:
             "user": user,
             "rebirths": data.pop("rebirths", 0),
             "set_items": data.get("set_items", 0),
+            "do_not_disturb": data.get("do_not_disturb", False)
         }
         for k, v in equipment.items():
             hero_data[k] = v
@@ -1633,6 +1635,7 @@ class Character:
             "set_items": self.set_items,
             "last_skill_reset": self.last_skill_reset,
             "last_known_currency": self.last_known_currency,
+            "do_not_disturb": self.do_not_disturb
         }
 
     async def rebirth(self, dev_val: int = None) -> dict:

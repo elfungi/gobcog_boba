@@ -27,15 +27,43 @@ class BaseActionButton(discord.ui.Button):
     def __init__(
             self,
             label,
+            action_type,
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
         super().__init__(label=label, style=style, row=row)
+        self.action_type = action_type
         self.style = style
 
-    async def send_response(self, interaction):
-        # Leave for implementing classes to override
-        return
+    async def send_response(self, interaction, action_type):
+        user = interaction.user
+        try:
+            c = await Character.from_json(self.view.ctx, self.view.cog.config, user, self.view.cog._daily_bonus)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            pass
+        choices = self.view.cog.ACTION_RESPONSE.get(action_type, {})
+        heroclass = c.hc.name
+        pet = ""
+        if c.hc is HeroClasses.ranger:
+            pet = c.heroclass.get("pet", {}).get("name", _("pet you would have if you had a pet"))
+
+        choice = random.choice(choices[heroclass] + choices["hero"])
+        choice = choice.replace("$pet", pet)
+        choice = choice.replace("$monster", self.view.challenge)
+        weapon = c.get_weapons()
+        choice = choice.replace("$weapon", weapon)
+        god = await self.view.cog.config.god_name()
+        if await self.view.cog.config.guild(interaction.guild).god_name():
+            god = await self.view.cog.config.guild(interaction.guild).god_name()
+        choice = choice.replace("$god", god)
+
+        if c.do_not_disturb:
+            choice += (
+                "\n\nYou will not join the next battle automatically."
+                "\nUse the `[p]auto on` command or toggle in ibackpack to enable auto mode."
+            )
+        await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
 
     async def do_callback(self, interaction: discord.Interaction, other_actions: List[str], action_list, action_str):
         user = interaction.user
@@ -44,7 +72,7 @@ class BaseActionButton(discord.ui.Button):
                 getattr(self.view, x).remove(user)
         if user not in action_list:
             action_list.append(user)
-            await self.send_response(interaction)
+            await self.send_response(interaction, self.action_type)
             await self.view.update()
         else:
             await interaction.response.defer()
@@ -65,35 +93,10 @@ class AttackButton(BaseActionButton):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Attack", style=style, row=row)
+        super().__init__(label="Attack", action_type="fight", style=style, row=row)
         self.style = style
         self.emoji = "\N{DAGGER KNIFE}\N{VARIATION SELECTOR-16}"
-        self.action_type = "fight"
         self.label_name = "Attack {}"
-
-    async def send_response(self, interaction: discord.Interaction):
-        user = interaction.user
-        try:
-            c = await Character.from_json(self.view.ctx, self.view.cog.config, user, self.view.cog._daily_bonus)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            pass
-        choices = self.view.cog.ACTION_RESPONSE.get(self.action_type, {})
-        heroclass = c.hc.name
-        pet = ""
-        if c.hc is HeroClasses.ranger:
-            pet = c.heroclass.get("pet", {}).get("name", _("pet you would have if you had a pet"))
-
-        choice = random.choice(choices[heroclass] + choices["hero"])
-        choice = choice.replace("$pet", pet)
-        choice = choice.replace("$monster", self.view.challenge)
-        weapon = c.get_weapons()
-        choice = choice.replace("$weapon", weapon)
-        god = await self.view.cog.config.god_name()
-        if await self.view.cog.config.guild(interaction.guild).god_name():
-            god = await self.view.cog.config.guild(interaction.guild).god_name()
-        choice = choice.replace("$god", god)
-        await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
 
     async def callback(self, interaction: discord.Interaction):
         await self.do_callback(interaction, ["magic", "talk", "pray", "auto"], self.view.fight,
@@ -106,35 +109,10 @@ class MagicButton(BaseActionButton):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Magic", style=style, row=row)
+        super().__init__(label="Magic", action_type="magic", style=style, row=row)
         self.style = style
         self.emoji = "\N{SPARKLES}"
-        self.action_type = "magic"
         self.label_name = "Magic {}"
-
-    async def send_response(self, interaction: discord.Interaction):
-        user = interaction.user
-        try:
-            c = await Character.from_json(self.view.ctx, self.view.cog.config, user, self.view.cog._daily_bonus)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            pass
-        choices = self.view.cog.ACTION_RESPONSE.get(self.action_type, {})
-        heroclass = c.hc.name
-        pet = ""
-        if c.hc is HeroClasses.ranger:
-            pet = c.heroclass.get("pet", {}).get("name", _("pet you would have if you had a pet"))
-
-        choice = random.choice(choices[heroclass] + choices["hero"])
-        choice = choice.replace("$pet", pet)
-        choice = choice.replace("$monster", self.view.challenge)
-        weapon = c.get_weapons()
-        choice = choice.replace("$weapon", weapon)
-        god = await self.view.cog.config.god_name()
-        if await self.view.cog.config.guild(interaction.guild).god_name():
-            god = await self.view.cog.config.guild(interaction.guild).god_name()
-        choice = choice.replace("$god", god)
-        await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
 
     async def callback(self, interaction: discord.Interaction):
         await self.do_callback(interaction, ["fight", "talk", "pray", "auto"], self.view.magic,
@@ -147,35 +125,10 @@ class TalkButton(BaseActionButton):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Talk", style=style, row=row)
+        super().__init__(label="Talk", action_type="talk", style=style, row=row)
         self.style = style
         self.emoji = "\N{LEFT SPEECH BUBBLE}\N{VARIATION SELECTOR-16}"
-        self.action_type = "talk"
         self.label_name = "Talk {}"
-
-    async def send_response(self, interaction: discord.Interaction):
-        user = interaction.user
-        try:
-            c = await Character.from_json(self.view.ctx, self.view.cog.config, user, self.view.cog._daily_bonus)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            pass
-        choices = self.view.cog.ACTION_RESPONSE.get(self.action_type, {})
-        heroclass = c.hc.name
-        pet = ""
-        if c.hc is HeroClasses.ranger:
-            pet = c.heroclass.get("pet", {}).get("name", _("pet you would have if you had a pet"))
-
-        choice = random.choice(choices[heroclass] + choices["hero"])
-        choice = choice.replace("$pet", pet)
-        choice = choice.replace("$monster", self.view.challenge)
-        weapon = c.get_weapons()
-        choice = choice.replace("$weapon", weapon)
-        god = await self.view.cog.config.god_name()
-        if await self.view.cog.config.guild(interaction.guild).god_name():
-            god = await self.view.cog.config.guild(interaction.guild).god_name()
-        choice = choice.replace("$god", god)
-        await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
 
     async def callback(self, interaction: discord.Interaction):
         await self.do_callback(interaction, ["fight", "magic", "pray", "auto"], self.view.talk,
@@ -188,38 +141,14 @@ class PrayButton(BaseActionButton):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Pray", style=style, row=row)
+        super().__init__(label="Pray", action_type="pray", style=style, row=row)
         self.style = style
         self.emoji = "\N{PERSON WITH FOLDED HANDS}"
         self.action_type = "pray"
         self.label_name = "Pray {}"
 
-    async def send_response(self, interaction: discord.Interaction):
-        user = interaction.user
-        try:
-            c = await Character.from_json(self.view.ctx, self.view.cog.config, user, self.view.cog._daily_bonus)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            pass
-        choices = self.view.cog.ACTION_RESPONSE.get(self.action_type, {})
-        heroclass = c.hc.name
-        pet = ""
-        if c.hc is HeroClasses.ranger:
-            pet = c.heroclass.get("pet", {}).get("name", _("pet you would have if you had a pet"))
-
-        choice = random.choice(choices[heroclass] + choices["hero"])
-        choice = choice.replace("$pet", pet)
-        choice = choice.replace("$monster", self.view.challenge)
-        weapon = c.get_weapons()
-        choice = choice.replace("$weapon", weapon)
-        god = await self.view.cog.config.god_name()
-        if await self.view.cog.config.guild(interaction.guild).god_name():
-            god = await self.view.cog.config.guild(interaction.guild).god_name()
-        choice = choice.replace("$god", god)
-        await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
-
     async def callback(self, interaction: discord.Interaction):
-        await self.do_callback(interaction, ["fight", "magic", "talk", "auto"], self.view.pray,
+        await self.do_callback(interaction, ["fight", "magic", "talk", "auto"],  self.view.pray,
                                "You are already praying for help against this monster.")
 
 
@@ -228,13 +157,12 @@ class AutoButton(BaseActionButton):
             self,
             style: discord.ButtonStyle,
             row: Optional[int] = None,
-            initial_len = 0
+            initial_len=0
     ):
         initial_label = "Auto ({})".format(initial_len) if initial_len > 0 else "Auto"
-        super().__init__(label=initial_label, style=style, row=row)
+        super().__init__(label=initial_label, action_type="auto", style=style, row=row)
         self.style = style
         self.emoji = "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
-        self.action_type = "auto"
         self.label_name = "Auto {}"
 
     async def callback(self, interaction: discord.Interaction):

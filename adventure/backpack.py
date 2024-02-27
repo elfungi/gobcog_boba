@@ -1035,6 +1035,7 @@ class BackPackCommands(AdventureMixin):
                 sell_callback=self.interactive_sell_callback,
                 convert_callback=self.interactive_auto_convert_callback,
                 open_loot_callback=self.interactive_open_loot_callback,
+                auto_toggle_callback=self.interactive_auto_toggle_callback,
                 source=PrettyBackpackSource(backpack_items, c.get_higher_balance()),
                 delete_message_after=True,
                 clear_reactions_after=True,
@@ -1108,3 +1109,9 @@ class BackPackCommands(AdventureMixin):
                               "rarity": item.rarity, "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
                     results.append(i_data)
                 return results
+
+    async def interactive_auto_toggle_callback(self, ctx, character):
+        async with self.get_lock(ctx.author):
+            character.do_not_disturb = not character.do_not_disturb
+            await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
+        return character

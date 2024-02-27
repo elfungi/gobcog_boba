@@ -30,7 +30,7 @@ class AdventureResults:
         self._last_raids: MutableMapping[int, List[Raid]] = {}
 
     def add_result(self, ctx: commands.Context, main_action: str, amount: float, num_ppl: int, success: bool,
-                   manual_users: List[discord.Member], auto_users: List[discord.Member]):
+                   manual_users: List[discord.Member], auto_users: List[discord.Member], exclusion_users: List):
         """Add result to this object.
         :main_action: Main damage action taken by the adventurers
             (highest amount dealt). Should be either "attack" or
@@ -38,7 +38,9 @@ class AdventureResults:
         :amount: Amount dealt.
         :num_ppl: Number of people in adventure.
         :success: Whether adventure was successful or not.
-        :auto_users: List of users who should be taking auto actions.
+        :manual_users: List of users who have taken a manual action this turn - will be added to auto if not excluded.
+        :auto_users: List of users who should is currently taking auto actions.
+        :exclusion_users: List of users who should be excluded from auto list.
         """
         if ctx.guild.id not in self._last_raids:
             self._last_raids[ctx.guild.id] = []
@@ -67,6 +69,8 @@ class AdventureResults:
                     continue
                 else:
                     saved_auto_users[user] = count - 1
+        for user in exclusion_users:
+            saved_auto_users.pop(user, None)
 
         self._last_raids[ctx.guild.id].append(
             Raid(main_action=main_action, amount=amount, num_ppl=num_ppl, success=success, auto_users=saved_auto_users)
