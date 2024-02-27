@@ -109,6 +109,9 @@ Preferred stat: INT
 `[p]negaverse` or `[p]nv`
 * Try your luck in combat vs. a shadowy apparition from the void for a chance at XP... or a chance of your items and gold being taken from you instead.
 
+`[p]negaverse_percent` or `[p]nv%`
+* Same command as `[p]negaverse` but takes an integer as a percentage of your current bank balance to send as the offering.
+
 `[p]loot`
 * Shows the count of your precious loot chests. From there, multiple chests of the same type can be opened at once, e.g. `[p]loot epic 5` will loot 5 epic chests at once and display the contents. Opening loot chests one by one will display a comparison to what the hero has equipped at that point in time.
 
