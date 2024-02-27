@@ -26,6 +26,8 @@ After 20 auto-battles without any manual action, the user will no longer partici
 Every time a user takes a manual option (i.e. pressing Attack, Magic, Talk, or Pray again), they will have their auto-battle count reset.  
 A user can also manually remove themselves from the Auto list by clicking on the Auto action button and confirming to Run.
 
+Auto-battle mode can be toggled on/off using the `[p]auto` command or toggle in `[p]ibackpack`.
+
 ## Hero/Heroclass
 
 Classes can be chosen at level 10 by using `[p]heroclass`. Available classes are Tinkerer, Berserker, Wizard, Cleric, Ranger and Bard.  
