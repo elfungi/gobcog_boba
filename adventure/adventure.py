@@ -2120,7 +2120,6 @@ class Adventure(
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.magic}{humanize_number(int_value)}\n"
                 )
-            print(session.insight, user.id)
             if session.insight[0] == 1 and user.id != session.insight[1].user.id:
                 attack += int(session.insight[1].total_int * 0.2)
         if fumble_count == len(attack_list):
