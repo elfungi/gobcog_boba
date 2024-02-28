@@ -1506,12 +1506,15 @@ class Character:
             data["treasure"].insert(4, 0)
 
         if heroclass["name"] == "Ranger":
+            theme = await config.theme()
+            extra_pets = await config.themes.all()
+            extra_pets = extra_pets.get(theme, {}).get("pets", {})
+            pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
             if heroclass.get("pet"):
-                theme = await config.theme()
-                extra_pets = await config.themes.all()
-                extra_pets = extra_pets.get(theme, {}).get("pets", {})
-                pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
                 heroclass["pet"] = pet_list.get(heroclass["pet"]["name"], heroclass["pet"])
+            if heroclass.get("soulbound_pet"):
+                heroclass["soulbound_pet"] = pet_list.get(heroclass["soulbound_pet"]["name"], heroclass["soulbound_pet"])
+
 
         if "adventures" in data:
             adventures = data["adventures"]
@@ -1597,12 +1600,15 @@ class Character:
             for n, i in v.to_json().items():
                 backpack[n] = i
 
-        if self.hc is HeroClasses.ranger and self.heroclass.get("pet"):
+        if self.hc is HeroClasses.ranger:
             theme = await config.theme()
             extra_pets = await config.themes.all()
             extra_pets = extra_pets.get(theme, {}).get("pets", {})
             pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
-            self.heroclass["pet"] = pet_list.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
+            if self.heroclass.get("pet"):
+                self.heroclass["pet"] = pet_list.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
+            if self.heroclass.get("soulbound_pet"):
+                self.heroclass["soulbound_pet"] = pet_list.get(self.heroclass["soulbound_pet"]["name"], self.heroclass["soulbound_pet"])
 
         return {
             "adventures": self.adventures,
@@ -1689,8 +1695,12 @@ class Character:
         if self.rebirths > 0:
             tresure.normal += max(int(self.rebirths), 0)
 
+        if self.heroclass["name"] == 'ranger' and self.heroclass["pet"]:
+            self.heroclass["soulbound_pet"] = self.heroclass["pet"]
+
         self.weekly_score.update({"rebirths": self.weekly_score.get("rebirths", 0) + 1})
         self.heroclass["cooldown"] = time.time() + 60  # Set skill cooldown to 60s from rebirth
+
         return {
             "adventures": self.adventures,
             "nega": self.nega,

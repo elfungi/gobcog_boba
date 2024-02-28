@@ -1145,7 +1145,7 @@ class InteractiveBackpackMenu(BaseMenu):
             self.clear_rarity.style = discord.ButtonStyle.red
 
         filter_selected = self.highlight_stats_filter_button(self.filter_group_1, ['att', 'cha', 'int', 'dex', 'luk'])
-        filter_selected = filter_selected or self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl'])
+        filter_selected = self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl']) or filter_selected
         if len(self._search_text) > 0 and not loot_view:
             self.search_button.style = discord.ButtonStyle.green
             filter_selected = True

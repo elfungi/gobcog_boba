@@ -151,6 +151,7 @@ class DevCommands(AdventureMixin):
                     withdraw = bal
                     await bank.set_balance(target, 0)
                 character_data = await c.rebirth(dev_val=rebirth_level)
+                print("Rebirthed:", character_data)
                 await self.config.user(target).set(character_data)
                 await ctx.send(
                     content=box(

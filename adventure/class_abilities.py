@@ -155,7 +155,7 @@ class ClassAbilities(AdventureMixin):
                             await self._clear_react(class_msg)
                             await class_msg.edit(
                                 content=box(
-                                    _("{}, you will lose your pet if you change your class.\nShall I proceed?").format(
+                                    _("{}, you will lose your pet (current or soulbound) if you change your class.\nShall I proceed?").format(
                                         escape(ctx.author.display_name)
                                     ),
                                     lang="ansi",
@@ -190,6 +190,7 @@ class ClassAbilities(AdventureMixin):
                             else:
                                 c.heroclass["ability"] = False
                                 c.heroclass["pet"] = {}
+                                c.heroclass["soulbound_pet"] = {}
                                 c.heroclass = clz.to_json()
 
                                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
@@ -285,18 +286,20 @@ class ClassAbilities(AdventureMixin):
                         )
                     )
                 else:
+                    soulbound_pet = c.heroclass.get("soulbound_pet", {})
                     theme = await self.config.theme()
                     extra_pets = await self.config.themes.all()
                     extra_pets = extra_pets.get(theme, {}).get("pets", {})
                     pet_list = {**self.PETS, **extra_pets}
                     pet_choices = list(pet_list.keys())
-                    pet = random.choice(pet_choices)
+                    pet = random.choice(pet_choices) if not soulbound_pet else soulbound_pet.get("name")
                     roll = random.randint(1, 50)
                     dipl_value = c.total_cha + (c.total_int // 3) + (c.luck // 2)
                     pet_reqs = pet_list[pet].get("bonuses", {}).get("req", {})
                     pet_msg4 = ""
                     can_catch = True
                     force_catch = False
+
                     if any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
                         can_catch = True
                         pet = random.choice(
@@ -316,87 +319,174 @@ class ClassAbilities(AdventureMixin):
                             can_catch = False
                             pet_msg4 = _("\nPerhaps you're missing some requirements to tame {pet}.").format(pet=pet)
 
-                    pet_bonus = pet_list[pet].get("bonus", 0)
-                    if pet_bonus >= 1.9:
-                        pet_bonus_str = "Its brilliant glow is blinding!"
-                    elif pet_bonus >= 1.7:
-                        pet_bonus_str = "It's full of energy and zooming around at amazing speeds!"
-                    elif pet_bonus >= 1.5:
-                        pet_bonus_str = "Its bright eyes shows eager and promise."
-                    elif pet_bonus >= 1.3:
-                        pet_bonus_str = "It looks in anticipation."
-                    elif pet_bonus >= 1.1:
-                        pet_bonus_str = "It made an effort to move, but it seems a little clumsy."
-                    else:
-                        pet_bonus_str = "It's just loafing around."
-
-                    pet_crit = pet_list[pet].get("bonuses", {}).get("crit", 0)
-                    if pet_crit >= 80:
-                        pet_crit_str = "It's as mighty as an Elder Dragon!"
-                    elif pet_crit >= 40:
-                        pet_crit_str = "It has the demeanor of a seasoned fighter!"
-                    elif pet_crit >= 20:
-                        pet_crit_str = "It's putting on a proud display of strength."
-                    elif pet_crit >= 10:
-                        pet_crit_str = "It looks like it could use some fighting experience."
-                    elif pet_crit >= 2:
-                        pet_crit_str = "It doesn't seem like it's going to help win many battles."
-                    else:
-                        pet_crit_str = "It has spirit... No, never mind. It fell over."
-
-                    pet_base_msg = "{c} encounters a wild {pet_name}. " + pet_bonus_str + " " + pet_crit_str
-                    pet_msg = box(
-                        _(pet_base_msg).format(
-                            c=escape(ctx.author.display_name),
-                            pet_name=pet
-                        ),
-                        lang="ansi",
-                    )
-                    user_msg = await ctx.send(pet_msg)
-                    await asyncio.sleep(2)
-                    pet_msg2 = box(
-                        _("{author} attempts to tame the wild {pet_name}. [{dice}{roll}]").format(
-                            author=escape(ctx.author.display_name),
-                            pet_name=pet,
-                            dice=self.emojis.dice,
-                            roll=roll
-                        ),
-                        lang="ansi",
-                    )
-                    await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
-                    await asyncio.sleep(2)
-                    bonus = ""
-                    if roll == 1:
-                        bonus = _("They approach the creature but trips over their own foot. How embarrassing.")
-                    elif roll in [50, 25]:
-                        bonus = _("They try to lure the the creature in with some delicious morsels of food.")
-                    if force_catch or (dipl_value > pet_list[pet]["cha"] and roll > 1 and can_catch):
-                        if force_catch:
-                            roll = 0
-                        else:
-                            roll = random.randint(0, (2 if roll in [50, 25] else 5))
-                        if roll == 0:
-                            if force_catch and any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
-                                msg = random.choice(
-                                    [
-                                        _("{author} commands {pet} into submission.").format(
-                                            pet=pet, author=escape(ctx.author.display_name)
+                    if soulbound_pet:
+                        await ctx.send(
+                            box(
+                                _("{author} stumbles upon a {pet}. It looks upon {author} with a knowing familiarity.").format(
+                                    author=escape(ctx.author.display_name), pet=pet
+                                ),
+                                lang="ansi",
+                            )
+                        )
+                        view = ConfirmView(60, ctx.author)
+                        msg = await ctx.send(
+                            "Do you approach the {pet}?".format(pet=pet),
+                            view=view
+                        )
+                        await view.wait()
+                        await msg.edit(view=None)
+                        if view.confirmed:
+                            if can_catch and dipl_value > pet_list[pet]["cha"]:
+                                await ctx.send(
+                                    box(
+                                        _(
+                                            "{author} immediately recognizes the {pet} from a former life."
+                                            "\nThe two reunite and set off on the next part of their adventure."
+                                        ).format(
+                                            author=escape(ctx.author.display_name), pet=pet
                                         ),
-                                        _("{pet} swears allegiance to the Supreme One.").format(
-                                            pet=pet, author=escape(ctx.author.display_name)
-                                        ),
-                                        _("{pet} takes an Oath of Allegiance to the Supreme One.").format(
-                                            pet=pet, author=escape(ctx.author.display_name)
-                                        ),
-                                    ]
+                                        lang="ansi",
+                                    )
                                 )
-                                pet_msg3 = box(
-                                    msg,
+                                c.heroclass["pet"] = pet_list[pet]
+                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                            else:
+                                await ctx.send(
+                                    box(
+                                        _(
+                                            "The {pet} takes a moment and doesn't recognize {author} in their current state."
+                                            "\nIt runs off and {author} is left wondering if maybe they've lost a dear friend."
+                                        ).format(
+                                            author=escape(ctx.author.display_name), pet=pet
+                                        ),
+                                        lang="ansi",
+                                    )
+                                )
+                                c.heroclass["soulbound_pet"] = {}
+                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                        else:
+                            await ctx.send(
+                                box(
+                                    _("{author} backs away for now. Perhaps a little more time is needed.").format(
+                                        author=escape(ctx.author.display_name)
+                                    ),
                                     lang="ansi",
                                 )
+                            )
+                    else:
+                        pet_bonus = pet_list[pet].get("bonus", 0)
+                        if pet_bonus >= 1.9:
+                            pet_bonus_str = "Its brilliant glow is blinding!"
+                        elif pet_bonus >= 1.7:
+                            pet_bonus_str = "It's full of energy and zooming around at amazing speeds!"
+                        elif pet_bonus >= 1.5:
+                            pet_bonus_str = "Its bright eyes shows eager and promise."
+                        elif pet_bonus >= 1.3:
+                            pet_bonus_str = "It looks in anticipation."
+                        elif pet_bonus >= 1.1:
+                            pet_bonus_str = "It made an effort to move, but it seems a little clumsy."
+                        else:
+                            pet_bonus_str = "It's just loafing around."
+
+                        pet_crit = pet_list[pet].get("bonuses", {}).get("crit", 0)
+                        if pet_crit >= 80:
+                            pet_crit_str = "It's as mighty as an Elder Dragon!"
+                        elif pet_crit >= 40:
+                            pet_crit_str = "It has the demeanor of a seasoned fighter!"
+                        elif pet_crit >= 20:
+                            pet_crit_str = "It's putting on a proud display of strength."
+                        elif pet_crit >= 10:
+                            pet_crit_str = "It looks like it could use some fighting experience."
+                        elif pet_crit >= 2:
+                            pet_crit_str = "It doesn't seem like it's going to help win many battles."
+                        else:
+                            pet_crit_str = "It has spirit... No, never mind. It fell over."
+
+                        pet_base_msg = "{c} encounters a wild {pet_name}. " + pet_bonus_str + " " + pet_crit_str
+                        pet_msg = box(
+                            _(pet_base_msg).format(
+                                c=escape(ctx.author.display_name),
+                                pet_name=pet
+                            ),
+                            lang="ansi",
+                        )
+                        user_msg = await ctx.send(pet_msg)
+                        pet_msg2 = box(
+                            _("{author} attempts to tame the wild {pet_name}. [{dice}{roll}]").format(
+                                author=escape(ctx.author.display_name),
+                                pet_name=pet,
+                                dice=self.emojis.dice,
+                                roll=roll
+                            ),
+                            lang="ansi",
+                        )
+                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
+                        bonus = ""
+                        if roll == 1:
+                            bonus = _("They approach the creature but trips over their own foot. How embarrassing.")
+                        elif roll in [50, 25]:
+                            bonus = _("They try to lure the the creature in with some delicious morsels of food.")
+                        if force_catch or (dipl_value > pet_list[pet]["cha"] and roll > 1 and can_catch):
+                            if force_catch:
+                                roll = 0
+                            else:
+                                roll = random.randint(0, (2 if roll in [50, 25] else 5))
+                            if roll == 0:
+                                if force_catch and any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
+                                    msg = random.choice(
+                                        [
+                                            _("{author} commands {pet} into submission.").format(
+                                                pet=pet, author=escape(ctx.author.display_name)
+                                            ),
+                                            _("{pet} swears allegiance to the Supreme One.").format(
+                                                pet=pet, author=escape(ctx.author.display_name)
+                                            ),
+                                            _("{pet} takes an Oath of Allegiance to the Supreme One.").format(
+                                                pet=pet, author=escape(ctx.author.display_name)
+                                            ),
+                                        ]
+                                    )
+                                    pet_msg3 = box(
+                                        msg,
+                                        lang="ansi",
+                                    )
+                                else:
+                                    pet_msg3 = box(
+                                        _("{bonus}\nThey successfully tamed the {pet}. [{dice}{roll}]").format(
+                                            bonus=bonus,
+                                            pet=pet,
+                                            dice=self.emojis.dice,
+                                            roll=roll
+                                        ),
+                                        lang="ansi",
+                                    )
+                                await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
+
+                                view = ConfirmView(60, ctx.author)
+                                msg = await ctx.send(
+                                    "Do you want to keep the {pet}?".format(pet=pet),
+                                    view=view
+                                )
+                                await view.wait()
+                                await msg.edit(view=None)
+                                if view.confirmed:
+                                    c.heroclass["pet"] = pet_list[pet]
+                                    await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                    confirm_msg = box(
+                                        _("{author} and the {pet} set off together on their new wonderful adventures.")
+                                        .format(author=escape(ctx.author.display_name), pet=pet)
+                                    )
+                                    await ctx.send(confirm_msg)
+                                else:
+                                    confirm_msg = box(
+                                        _("{author} released the {pet} back into the wild. Who knows what could have been?")
+                                        .format(author=escape(ctx.author.display_name), pet=pet),
+                                        lang="ansi"
+                                    )
+                                    await ctx.send(confirm_msg)
                             else:
                                 pet_msg3 = box(
-                                    _("{bonus}\nThey successfully tamed the {pet}. [{dice}{roll}]").format(
+                                    _("{bonus}\nUnfortunately, the {pet} escaped. [{dice}{roll}]").format(
                                         bonus=bonus,
                                         pet=pet,
                                         dice=self.emojis.dice,
@@ -404,33 +494,10 @@ class ClassAbilities(AdventureMixin):
                                     ),
                                     lang="ansi",
                                 )
-                            await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-
-                            view = ConfirmView(60, ctx.author)
-                            msg = await ctx.send(
-                                "Do you want to keep the {pet}?".format(pet=pet),
-                                view=view
-                            )
-                            await view.wait()
-                            await msg.edit(view=None)
-                            if view.confirmed:
-                                c.heroclass["pet"] = pet_list[pet]
-                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
-                                confirm_msg = box(
-                                    _("{author} and the {pet} set off together on their new wonderful adventures.")
-                                    .format(author=escape(ctx.author.display_name), pet=pet)
-                                )
-                                await ctx.send(confirm_msg)
-                            else:
-                                confirm_msg = box(
-                                    _("{author} released the {pet} back into the wild. Who knows what could have been?")
-                                    .format(author=escape(ctx.author.display_name), pet=pet),
-                                    lang="ansi"
-                                )
-                                await ctx.send(confirm_msg)
+                                await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
                         else:
                             pet_msg3 = box(
-                                _("{bonus}\nUnfortunately, the {pet} escaped. [{dice}{roll}]").format(
+                                _("{bonus}\nUnfortunately, the {pet} doesn't seem very interested.").format(
                                     bonus=bonus,
                                     pet=pet,
                                     dice=self.emojis.dice,
@@ -439,17 +506,6 @@ class ClassAbilities(AdventureMixin):
                                 lang="ansi",
                             )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
-                    else:
-                        pet_msg3 = box(
-                            _("{bonus}\nUnfortunately, the {pet} doesn't seem very interested.").format(
-                                bonus=bonus,
-                                pet=pet,
-                                dice=self.emojis.dice,
-                                roll=roll
-                            ),
-                            lang="ansi",
-                        )
-                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
 
     @pet.command(name="forage")
     @commands.bot_has_permissions(add_reactions=True)
