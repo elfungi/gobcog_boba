@@ -5,6 +5,7 @@ import logging
 import random
 import time
 from typing import Optional, List
+from functools import reduce
 
 import discord
 from redbot.core import commands
@@ -1011,6 +1012,13 @@ class BackPackCommands(AdventureMixin):
                     timeout=180,
                 ).start(ctx=ctx)
 
+    async def get_character(self, ctx):
+        try:
+            c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            return c
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+        return None
 
     @commands.command(name="ibackpack")
     @commands.bot_has_permissions(add_reactions=True)
@@ -1023,15 +1031,11 @@ class BackPackCommands(AdventureMixin):
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         if not ctx.invoked_subcommand:
-            try:
-                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
-                return
-
+            c = await self.get_character(ctx)
             backpack_items = await c.get_argparse_backpack_no_format()
             await InteractiveBackpackMenu(
-                c=c,
+                character=c,
+                character_supplier=self.get_character,
                 sell_callback=self.interactive_sell_callback,
                 convert_callback=self.interactive_auto_convert_callback,
                 open_loot_callback=self.interactive_open_loot_callback,
@@ -1044,71 +1048,78 @@ class BackPackCommands(AdventureMixin):
 
     async def interactive_sell_callback(self, ctx, character, items: List[Item]):
         if self.in_adventure(ctx):
-            return -1, -1
-        else:
-            async with self.get_lock(ctx.author):
-                total_price = 0
-                items_sold = 0
-                async with ctx.typing():
-                    async for item in AsyncIter(items, steps=100):
-                        old_owned = item.owned
-                        item_price = 0
-                        async for _loop_counter in AsyncIter(range(0, old_owned), steps=100):
-                            item.owned -= 1
-                            item_price += _sell(character, item)
-                            if item.owned <= 0 and item.name in character.backpack:
-                                del character.backpack[item.name]
-                        item_price = max(item_price, 0)
-                        total_price += item_price
-                        items_sold += old_owned
-                    if total_price > 0:
-                        try:
-                            await bank.deposit_credits(ctx.author, total_price)
-                        except BalanceTooHigh as e:
-                            await bank.set_balance(ctx.author, e.max_balance)
-                    character.last_known_currency = await bank.get_balance(ctx.author)
-                    character.last_currency_check = time.time()
-                    await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
-                return items_sold, total_price
+            return character, "You tried to go sell your items but the monster ahead is not allowing you to leave."
+        async with self.get_lock(ctx.author):
+            c = await self.get_character(ctx)
+            total_price = 0
+            items_sold = 0
+            async with ctx.typing():
+                async for item in AsyncIter(items, steps=100):
+                    old_owned = item.owned
+                    item_price = 0
+                    async for _loop_counter in AsyncIter(range(0, old_owned), steps=100):
+                        item.owned -= 1
+                        item_price += _sell(c, item)
+                        if item.owned <= 0 and item.name in c.backpack:
+                            del c.backpack[item.name]
+                    item_price = max(item_price, 0)
+                    total_price += item_price
+                    items_sold += old_owned
+                if total_price > 0:
+                    try:
+                        await bank.deposit_credits(ctx.author, total_price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
+                c.last_known_currency = await bank.get_balance(ctx.author)
+                c.last_currency_check = time.time()
+                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+            return c, "You sold {} item(s) for {}.".format(humanize_number(items_sold), humanize_number(total_price))
 
     async def interactive_auto_convert_callback(self, ctx, character):
         if self.in_adventure(ctx):
-            return character, {}
+            return character, "You tried to go convert your loot but the monster ahead is not allowing you to leave."
         async with self.get_lock(ctx.author):
-            try:
-                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
+            c = await self.get_character(ctx)
+            upgrade_mapping = {
+                "normal": "rare",
+                "rare": "epic",
+                "epic": "legendary"
+            }
+            upgrade_step = 25
+            results = {}
+            for rarity, upgrade in upgrade_mapping.items():
+                current_count = c.treasure[rarity].number
+                number_up = current_count // upgrade_step
+                c.treasure[rarity] -= number_up * upgrade_step
+                c.treasure[upgrade] += number_up
+                results[rarity] = number_up
+            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+
+            if reduce(lambda a, b: a + b, results.values()) == 0:
+                msg = "You tried to go convert your loot but you're a bit short on chests to upgrade."
             else:
-                upgrade_mapping = {
-                    "normal": "rare",
-                    "rare": "epic",
-                    "epic": "legendary"
-                }
-                upgrade_step = 25
-                results = {}
-                for rarity, upgrade in upgrade_mapping.items():
-                    current_count = c.treasure[rarity].number
-                    number_up = current_count // upgrade_step
-                    c.treasure[rarity] -= number_up * upgrade_step
-                    c.treasure[upgrade] += number_up
-                    results[rarity] = number_up
-                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
-                return c, results
+                loot = []
+                if results["normal"] > 0:
+                    loot.append(" {} Rare".format(results["normal"]))
+                if results["rare"] > 0:
+                    loot.append(" {} Epic".format(results["rare"]))
+                if results["epic"] > 0:
+                    loot.append(" {} Legendary".format(results["epic"]))
+                msg = "Successfully converted into"
+                msg += _(" and").join([",".join(loot[:-1]), loot[-1]] if len(loot) > 2 else loot)
+                msg += " chest(s)."
+            return c, msg
 
     async def interactive_open_loot_callback(self, ctx, character, rarity, number):
         if self.in_adventure(ctx):
-            return character, []
+            return character, [], "You left all your loot back at the inn. There's a monster ahead!"
         async with self.get_lock(ctx.author):
-            try:
-                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
+            c = await self.get_character(ctx)
             if c.is_backpack_full(is_dev=is_dev(ctx.author)):
-                return c, []
+                return c, [], "Your backpack is full!"
             else:
                 if number > c.treasure[rarity]:
-                    return c, []
+                    return c, [], "You can't open this many chests anymore. Reset your view!"
                 else:
                     c.treasure[rarity] -= number
                     await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
@@ -1121,14 +1132,11 @@ class BackPackCommands(AdventureMixin):
                                   "dex": item.dex, "luck": item.luck, "owned": item.owned, "degrade": item.degrade,
                                   "rarity": item.rarity, "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
                         results.append(i_data)
-                    return c, results
+                    return c, results, "You own {} chests.".format(c.treasure.ansi)
 
     async def interactive_auto_toggle_callback(self, ctx):
         async with self.get_lock(ctx.author):
-            try:
-                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
+            c = await self.get_character(ctx)
             c.do_not_disturb = not c.do_not_disturb
             await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
         return c

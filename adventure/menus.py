@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
-from functools import reduce
 
 import discord
 from discord import Interaction
@@ -410,47 +409,41 @@ class EconomySource(menus.ListPageSource):
 
 
 class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], balance=0, include_sets=True, chests=None, convert_results=None,
-                 sold_count=0, sold_price=0, loot_count=0):
+    def __init__(self, entries: List[Dict], balance=0, include_sets=False, body_msg="", contextual_msg=""):
         super().__init__(entries, per_page=10)
-        self._balance = balance
-        self._include_sets = include_sets
-        self._chests = chests
-        self._convert_results = convert_results
-        self._sold_count = sold_count
-        self._sold_price = sold_price
-        self._items_len = len(entries)
-        self._loot_count = loot_count
+        self.balance = balance
+        self.include_sets = include_sets
+        self.body_msg = body_msg
+        self.contextual_msg = contextual_msg
+        self.col_name_len = 64
+        self.col_slot_len = 8
+        self.col_attr_len = 6
+        self.col_set_len = 28
 
     def is_paginating(self):
         return True
 
-    async def format_page(self, menu: menus.MenuPages, entries: List[Dict]):
-        format_ansi = lambda text, ansi_code=ANSITextColours.white: f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
-        ctx = menu.ctx
-        name_len = 64
-        slot_len = 8
-        attr_len = 6
-        set_len = 28
-        author = ctx.author
-        start_position = (menu.current_page * self.per_page) + 1
+    def build_balance_msg(self, menu: menus.MenuPages):
+        return "```{}'s Backpack - {} gold```".format(menu.ctx.author, humanize_number(self.balance))
 
-        # START formatting data for item entries
+    def build_item_headers(self):
         header = (
-            f"{format_ansi('Name'):{name_len}}"  # use ansi on this field to match spacing on table
-            f"{'Slot':{slot_len}}"
-            f"{'ATT':{attr_len}}"
-            f"{'CHA':{attr_len}}"
-            f"{'INT':{attr_len}}"
-            f"{'DEX':{attr_len}}"
-            f"{'LUK':{attr_len}}"
-            f"{'QTY':{attr_len}}"
-            f"{'DEG':{attr_len}}"
-            f"{'LVL':{attr_len}}"
+            f"{self.format_ansi('Name'):{self.col_name_len}}"  # use ansi on this field to match spacing on table
+            f"{'Slot':{self.col_slot_len}}"
+            f"{'ATT':{self.col_attr_len}}"
+            f"{'CHA':{self.col_attr_len}}"
+            f"{'INT':{self.col_attr_len}}"
+            f"{'DEX':{self.col_attr_len}}"
+            f"{'LUK':{self.col_attr_len}}"
+            f"{'QTY':{self.col_attr_len}}"
+            f"{'DEG':{self.col_attr_len}}"
+            f"{'LVL':{self.col_attr_len}}"
         )
-        if self._include_sets:
-            header += f"{'  Set':{set_len}}"
+        if self.include_sets:
+            header += f"{'  Set':{self.col_set_len}}"
+        return header
 
+    def build_item_data(self, entries: List[Dict], start_position):
         data = []
         for (i, item) in enumerate(entries, start=start_position):
             name = item["name"]
@@ -472,93 +465,57 @@ class PrettyBackpackSource(menus.ListPageSource):
             set_value = _set if rarity in [Rarities.set] else ""
 
             ansi_name = rarity.as_ansi(name)
-            level_value = format_ansi(level, ANSITextColours.red) if cannot_equip else format_ansi(level)
+            level_value = self.format_ansi(level, ANSITextColours.red) if cannot_equip else self.format_ansi(level)
             i_data = (
-                f"{ansi_name:{name_len}}"
-                f"{slot:{slot_len}}"
-                f"{str(att):{attr_len}}"
-                f"{str(cha):{attr_len}}"
-                f"{str(_int):{attr_len}}"
-                f"{str(dex):{attr_len}}"
-                f"{str(luk):{attr_len}}"
-                f"{str(owned):{attr_len}}"
-                f"{str(deg_value):{attr_len}}"
-                f"{level_value:{attr_len}}"
+                f"{ansi_name:{self.col_name_len}}"
+                f"{slot:{self.col_slot_len}}"
+                f"{str(att):{self.col_attr_len}}"
+                f"{str(cha):{self.col_attr_len}}"
+                f"{str(_int):{self.col_attr_len}}"
+                f"{str(dex):{self.col_attr_len}}"
+                f"{str(luk):{self.col_attr_len}}"
+                f"{str(owned):{self.col_attr_len}}"
+                f"{str(deg_value):{self.col_attr_len}}"
+                f"{level_value:{self.col_attr_len}}"
             )
-            if self._include_sets:
-                i_data += f"     {set_value:{set_len}}"
+            if self.include_sets:
+                i_data += f"     {set_value:{self.col_set_len}}"
             data.append(i_data)
-        # END formatting data
+        return data
 
-        # Header
-        msg = "```{}'s Backpack - {} gold```".format(author, humanize_number(self._balance))
-        msg += "```ansi\n{}```".format(header)
+    async def format_page(self, menu: menus.MenuPages, entries: List[Dict]):
+        start_position = (menu.current_page * self.per_page) + 1
 
-        # START body - this is where the main view is of backpack items
-        if self._chests is None or self._loot_count > 0:
-            # Item view - either backpack items or opened loot items
-            if len(data) == 0:
-                no_content = "There doesn't seem to be anything here..."
-                msg += "```md\n{}```".format(no_content)
-            else:
-                msg += "```ansi\n{}``````ansi\n{}```".format(
-                    "\n".join(data),
-                    f"Page {menu.current_page + 1}/{self.get_max_pages()}"
-                )
+        header = self.build_item_headers()
+        data = self.build_item_data(entries, start_position)
+
+        msg = self.build_balance_msg(menu)
+        msg += self.wrap_ansi(header)
+
+        if self.body_msg != "":
+            msg += self.wrap_ansi(self.body_msg)
+        elif len(data) == 0:
+            msg += self.wrap_md("There doesn't seem to be anything here...")
         else:
-            # Loot view - start of view to convert or open chests
-            msg += ("```ansi\nYou own {} chests.\n"
-                    "\nUse corresponding rarity buttons below to open your chests."
-                    "\n"
-                    "\nAuto-Convert will convert all your chests in multiples of 25 up to Legendary.```"
-                    .format(self._chests))
-        # END body
+            msg += self.wrap_ansi("\n".join(data))
+            msg += self.wrap_ansi(f"Page {menu.current_page + 1}/{self.get_max_pages()}")
 
-        # Start contextual message
-        if self._sold_count > 0:
-            # Items sold
-            msg += "```md\n* {} item(s) sold for {}.```".format(
-                self._sold_count,
-                humanize_number(self._sold_price)
-            )
-        elif self._sold_count == -1:
-            # Tried to sell item but in adventure
-            msg += "```md\nYou tried to go sell your items but the monster ahead is not allowing you to leave.```"
-        elif self._sold_count == SELL_CONFIRM_AMOUNT:
-            # Confirmation needed for selling
-            msg += (
-                "```md\n* Are you sure you want to sell these {} listings and their copies? Press the confirm button to proceed.```"
-                .format(
-                    humanize_number(self._items_len)
-                ))
-        elif self._convert_results is not None:
-            # Doing auto-convert
-            if len(self._convert_results.keys()) == 0:
-                # Tried to auto-convert but in adventure
-                msg += "```md\n* You tried to go convert your loot but the monster ahead is not allowing you to leave.```"
-            elif reduce(lambda a, b: a + b, self._convert_results.values()) == 0:
-                # Tried to auto-convert but nothing was converted
-                msg += "```md\n* You tried to go convert your loot but you're a bit short on chests to upgrade.```"
-            else:
-                # Successful convert
-                msg += "```md\n* Successfully converted into"
-                normal = " {} Rare".format(self._convert_results["normal"]) if self._convert_results[
-                                                                                   "normal"] > 0 else ""
-                rare = " {} Epic".format(self._convert_results["rare"]) if self._convert_results["rare"] > 0 else ""
-                epic = " {} Legendary".format(self._convert_results["epic"]) if self._convert_results[
-                                                                                    "epic"] > 0 else ""
-                msg += ",".join(filter(None, [normal, rare, epic]))
-                msg += " chest(s).```"
-        elif self._loot_count > 0:
-            # Opened chests
-            if self._items_len == 0:
-                # Tried to open chests but in adventure or backpack is full
-                msg += "```md\n* You tried to go open your loot but you're either occupied, your backpack is full, or you don't have enough loot anymore.```"
-            else:
-                # Chests opened successful
-                msg += ("```ansi\nYou own {} chests.```".format(self._chests))
+        if self.contextual_msg != "":
+            msg += self.wrap_ansi(self.format_ansi("* ", ANSITextColours.yellow) + self.contextual_msg)
+
         return msg
 
+    @staticmethod
+    def format_ansi(text, ansi_code=ANSITextColours.white):
+        return f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
+
+    @staticmethod
+    def wrap_ansi(msg):
+        return "```ansi\n{}```".format(msg)
+
+    @staticmethod
+    def wrap_md(msg):
+        return "```md\n{}```".format(msg)
 
 class StopButton(discord.ui.Button):
     def __init__(
@@ -1021,7 +978,8 @@ class InteractiveBackpackMenu(BaseMenu):
     def __init__(
             self,
             source,
-            c: Character,
+            character_supplier: Any,
+            character: Character,
             sell_callback: Any,
             convert_callback: Any,
             open_loot_callback: Any,
@@ -1040,21 +998,19 @@ class InteractiveBackpackMenu(BaseMenu):
             message=message,
             **kwargs
         )
-        self._c = c
+        self._character_supplier = character_supplier
+        self._c = character
         self._sell_callback = sell_callback
         self._convert_callback = convert_callback
         self._open_loot_callback = open_loot_callback
         self._auto_toggle_callback = auto_toggle_callback
-        self._current_view = ""
-        self._rarities = []
+        self._current_view = "default"
+        self._rarities = [i for i in Rarities]
         self._stats = self.initial_stats_filters()
         self._equippable = False
         self._delta = False
         self._sold_count = 0
-        self._sold_price = 0
-        self._convert_results = None
         self._search_text = ""
-        self.initial_state()
         # remove useless buttons from parents
         self.remove_item(self.stop_button)
         self.remove_item(self.last_button)
@@ -1062,18 +1018,18 @@ class InteractiveBackpackMenu(BaseMenu):
         self.remove_item(self.forward_button)
         self.remove_item(self.backward_button)
 
-    def initial_state(self):
+    async def initial_state(self):
+        self._c = await self._character_supplier(self.ctx)
         self._current_view = "default"
         self._rarities = [i for i in Rarities]
         self._stats = self.initial_stats_filters()
         self._equippable = False
         self._delta = False
         self._sold_count = 0
-        self._sold_price = 0
-        self._convert_results = None
         self._search_text = ""
 
-    def initial_stats_filters(self):
+    @staticmethod
+    def initial_stats_filters():
         return {
             'att': None,
             'cha': None,
@@ -1221,20 +1177,19 @@ class InteractiveBackpackMenu(BaseMenu):
             if self._sold_count == SELL_CONFIRM_AMOUNT:
                 # confirm action
                 backpack_items = await self.get_backpack_item_for_sell()
-                count, amount = await self._sell_callback(self.ctx, self._c, backpack_items)
-                self._sold_count = count
-                self._sold_price = amount
-                await self.do_change_source(interaction)
+                c, msg = await self._sell_callback(self.ctx, self._c, backpack_items)
+                self._c = c
+                self._sold_count = 0
+                await self.do_change_source(interaction=interaction, contextual_msg=msg)
             else:
                 # start confirm action
                 self._sold_count = SELL_CONFIRM_AMOUNT
-                await self.do_change_source(interaction)
+                await self.do_change_source(interaction=interaction)
         else:
             # auto-convert button
-            c, convert_results = await self._convert_callback(self.ctx, self._c)
+            c, msg = await self._convert_callback(self.ctx, self._c)
             self._c = c
-            self._convert_results = convert_results
-            await self.do_change_source(interaction)
+            await self.do_change_source(interaction, contextual_msg=msg)
 
     @discord.ui.button(style=discord.ButtonStyle.red, label="Auto Toggle", row=0)
     async def auto_toggle(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
@@ -1270,7 +1225,7 @@ class InteractiveBackpackMenu(BaseMenu):
     @discord.ui.button(style=discord.ButtonStyle.red,
                        label="\u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b ", row=1)
     async def reset_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self.initial_state()
+        await self.initial_state()
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.green,
@@ -1334,7 +1289,7 @@ class InteractiveBackpackMenu(BaseMenu):
                        label="Stats",
                        row=3)
     async def filter_group_1(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'}}
+        input_mapping = {key: self._stats[key] for key in sorted(self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'})}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 1", input_mapping)
         await interaction.response.send_modal(modal)
 
@@ -1342,7 +1297,7 @@ class InteractiveBackpackMenu(BaseMenu):
                        label="\u200b \u200b \u200b \u200b \u200b Deg/Lvl \u200b \u200b \u200b \u200b",
                        row=3)
     async def filter_group_2(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        input_mapping = {key: self._stats[key] for key in self._stats.keys() & {'deg', 'lvl'}}
+        input_mapping = {key: self._stats[key] for key in sorted(self._stats.keys() & {'deg', 'lvl'})}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 2", input_mapping)
         await interaction.response.send_modal(modal)
 
@@ -1370,8 +1325,6 @@ class InteractiveBackpackMenu(BaseMenu):
 
     def reset_contextual_state(self):
         self._sold_count = 0
-        self._sold_price = 0
-        self._convert_results = None
 
     async def get_backpack_item_for_sell(self):
         return await self.get_backpack_items(True)
@@ -1422,14 +1375,36 @@ class InteractiveBackpackMenu(BaseMenu):
                                                                  degrade=deg_filter,
                                                                  level=lvl_filter)
 
-    async def do_change_source(self, interaction, items=None, loot_count=0):
+    async def do_change_source(self, interaction, items=None, contextual_msg=""):
         balance = self._c.get_higher_balance()
         backpack_items = await self.get_backpack_items() if items is None else items
         include_sets = Rarities.set in self._rarities or self._current_view == "loot"
-        chests = self._c.treasure.ansi if self._current_view == "loot" else None
+        body_msg = ""
+
+        if self._sold_count == SELL_CONFIRM_AMOUNT:
+            contextual_msg = (
+                "Are you sure you want to sell these {} listings and their copies? "
+                "Press the confirm button to proceed."
+            ).format(len(backpack_items))
+        elif self._current_view == "loot":
+            chests = "You own {} chests".format(self._c.treasure.ansi)
+            if items is None:
+                body_msg = chests
+                body_msg += (
+                    "\n"
+                    "\nUse corresponding rarity buttons below to open your chests."
+                    "\n"
+                    "\nAuto-Convert will convert all your chests in multiples of 25 up to Legendary."
+                )
+            elif contextual_msg == "":
+                contextual_msg = chests
+
         await self.change_source(
-            source=PrettyBackpackSource(backpack_items, balance, include_sets, chests, self._convert_results,
-                                        self._sold_count, self._sold_price, loot_count),
+            source=PrettyBackpackSource(entries=backpack_items,
+                                        balance=balance,
+                                        include_sets=include_sets,
+                                        body_msg=body_msg,
+                                        contextual_msg=contextual_msg),
             interaction=interaction)
 
     async def do_change_source_from_search(self, interaction):
@@ -1440,12 +1415,12 @@ class InteractiveBackpackMenu(BaseMenu):
         await self.do_change_source(interaction)
 
     async def do_open_loot(self, interaction, rarity, number):
-        self._convert_results = None  # reset convert results whenever loot is opened
-        c, opened_items = await self._open_loot_callback(self.ctx, self._c, rarity, number)
+        c, opened_items, msg = await self._open_loot_callback(self.ctx, self._c, rarity, number)
         self._c = c
-        await self.do_change_source(interaction, opened_items, number)
+        await self.do_change_source(interaction, opened_items, contextual_msg=msg)
 
-    async def navigate_page(self, interaction, button):
+    @staticmethod
+    async def navigate_page(interaction, button):
         try:
             page = await button.view.source.get_page(button.view.current_page)
         except IndexError:
@@ -1486,7 +1461,8 @@ class InteractiveBackpackFilterModal(discord.ui.Modal):
         self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
-    def build_input(self, label, value):
+    @staticmethod
+    def build_input(label, value):
         v = value[0] if value and len(value) > 0 else None
         return discord.ui.TextInput(
             label=label,
@@ -1512,7 +1488,8 @@ class InteractiveBackpackSearchModal(discord.ui.Modal):
         self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
-    def build_input(self, value):
+    @staticmethod
+    def build_input(value):
         return discord.ui.TextInput(
             label="Search by name (case insensitive)",
             default=value,
