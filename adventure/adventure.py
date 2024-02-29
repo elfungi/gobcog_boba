@@ -2356,7 +2356,7 @@ class Adventure(
                     bonus = random.randint(5, min(15, c.rebirths))
                     dipl_bonus = int((roll - bonus + dipl_value + rebirths))
                     if c.rebirths >= HC_VETERAN_RANK:
-                        dipl_bonus = int(0.05 * len(talk_list) * dipl_bonus)
+                        dipl_bonus = int(0.01 * len(talk_list) * dipl_bonus)
                         msg += (_("{}'s music flows through the party. +{}{}\n")
                                 .format(bold(user.display_name), self.emojis.talk, humanize_number(dipl_bonus)))
                     diplomacy += int(dipl_bonus / cdef)
@@ -2379,7 +2379,7 @@ class Adventure(
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
                     base_bonus = (random.randint(1, min(10, c.rebirths)) + 5) * (rebirths // 2)
                     if c.rebirths >= HC_VETERAN_RANK:
-                        dipl_bonus = int(0.2 * len(talk_list) * base_bonus)
+                        dipl_bonus = int(0.08 * len(talk_list) * base_bonus)
                         msg += (_("{}'s music rallied the party! +{}{}\n")
                                 .format(bold(user.display_name), self.emojis.talk, humanize_number(dipl_bonus)))
 
