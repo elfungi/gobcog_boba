@@ -35,7 +35,7 @@ class Negaverse(AdventureMixin):
         )
 
     @commands.hybrid_command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.guild_only()
     async def _negaverse_command(self, ctx: commands.Context, offering: str):
         """This will send you to fight a nega-member!
@@ -160,8 +160,8 @@ class Negaverse(AdventureMixin):
                 return await nv_msg.edit(content=entry_msg, view=None)
             else:
                 entry_msg = _(
-                    "Shadowy hands reach out to take your offering from you and a swirling "
-                    "black void slowly grows and engulfs you, transporting you to the negaverse with {offering} {currency} in hand."
+                    "Shadowy hands reach out to take your offering of {offering} {currency} from you and a swirling "
+                    "black void slowly grows and engulfs you, transporting you to the negaverse."
                 ).format(offering=humanize_number(offering), currency=currency_name)
                 await nv_msg.edit(content=entry_msg, view=None)
                 await self._clear_react(nv_msg)
