@@ -25,11 +25,22 @@ log = logging.getLogger("red.cogs.adventure")
 class Negaverse(AdventureMixin):
     """This class will handle negaverse interactions"""
     @commands.hybrid_command(name="negaverse_percent", aliases=["nv%"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
     @commands.guild_only()
-    async def _negaverse_percent_command(self, ctx: commands.Context, percentage: int):
+    async def _negaverse_percent_command(self, ctx: commands.Context):
+        return await smart_embed(
+            ctx,
+            _("nv% has been removed - you can use `nv` with a percentage now (e.g. `nv 50%`)."),
+            ephemeral=True,
+        )
+
+    @commands.hybrid_command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
+    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
+    @commands.guild_only()
+    async def _negaverse_command(self, ctx: commands.Context, offering: str):
         """This will send you to fight a nega-member!
-        Specify a percentage number (e.g. 50) to send from your total balance.
+
+        `offering` can be given as an integer amount or a percentage
         """
         if self.in_adventure(ctx):
             ctx.command.reset_cooldown(ctx)
@@ -40,16 +51,14 @@ class Negaverse(AdventureMixin):
             )
 
         bal = await bank.get_balance(ctx.author)
-        offering = round(float(percentage / 100) * bal)
-        await self._negaverse(ctx, offering)
-
-
-    @commands.hybrid_command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
-    @commands.guild_only()
-    async def _negaverse_command(self, ctx: commands.Context, offering: int):
-        """This will send you to fight a nega-member!"""
-        await self._negaverse(ctx, offering)
+        actual_offering = None
+        if offering.isnumeric():
+            actual_offering = int(offering)
+        elif len(offering) > 0 and offering[-1] == "%":
+            value = offering[:-1]
+            if value.isnumeric():
+                actual_offering = round(float(float(value) / 100) * bal)
+        await self._negaverse(ctx, actual_offering)
 
     async def _negaverse(
         self,
