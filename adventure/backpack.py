@@ -1073,9 +1073,13 @@ class BackPackCommands(AdventureMixin):
 
     async def interactive_auto_convert_callback(self, ctx, character):
         if self.in_adventure(ctx):
-            return {}
-        else:
-            async with self.get_lock(ctx.author):
+            return character, {}
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+            else:
                 upgrade_mapping = {
                     "normal": "rare",
                     "rare": "epic",
@@ -1084,34 +1088,47 @@ class BackPackCommands(AdventureMixin):
                 upgrade_step = 25
                 results = {}
                 for rarity, upgrade in upgrade_mapping.items():
-                    current_count = character.treasure[rarity].number
+                    current_count = c.treasure[rarity].number
                     number_up = current_count // upgrade_step
-                    character.treasure[rarity] -= number_up * upgrade_step
-                    character.treasure[upgrade] += number_up
+                    c.treasure[rarity] -= number_up * upgrade_step
+                    c.treasure[upgrade] += number_up
                     results[rarity] = number_up
-                await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
-                return results
+                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                return c, results
 
     async def interactive_open_loot_callback(self, ctx, character, rarity, number):
-        if self.in_adventure(ctx) or character.is_backpack_full(is_dev=is_dev(ctx.author)):
-            return []
-        else:
-            async with self.get_lock(ctx.author):
-                character.treasure[rarity] -= number
-                await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
-                items = await self._open_chests(ctx, Rarities.get_from_name(rarity), number, character)
-                results = []
-                async for item_name, item in AsyncIter(items.items(), steps=100):
-                    item_level = character.equip_level(item)
-                    cannot_equip = item_level > character.lvl
-                    i_data = {"name": item.name, "slot": item.slot, "att": item.att, "cha": item.cha, "int": item.int,
-                              "dex": item.dex, "luck": item.luck, "owned": item.owned, "degrade": item.degrade,
-                              "rarity": item.rarity, "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
-                    results.append(i_data)
-                return results
-
-    async def interactive_auto_toggle_callback(self, ctx, character):
+        if self.in_adventure(ctx):
+            return character, []
         async with self.get_lock(ctx.author):
-            character.do_not_disturb = not character.do_not_disturb
-            await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
-        return character
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+            if c.is_backpack_full(is_dev=is_dev(ctx.author)):
+                return c, []
+            else:
+                if number > c.treasure[rarity]:
+                    return c, []
+                else:
+                    c.treasure[rarity] -= number
+                    await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                    items = await self._open_chests(ctx, Rarities.get_from_name(rarity), number, c)
+                    results = []
+                    async for item_name, item in AsyncIter(items.items(), steps=100):
+                        item_level = c.equip_level(item)
+                        cannot_equip = item_level > c.lvl
+                        i_data = {"name": item.name, "slot": item.slot, "att": item.att, "cha": item.cha, "int": item.int,
+                                  "dex": item.dex, "luck": item.luck, "owned": item.owned, "degrade": item.degrade,
+                                  "rarity": item.rarity, "set": item.set,  "lvl": item_level, "cannot_equip": cannot_equip}
+                        results.append(i_data)
+                    return c, results
+
+    async def interactive_auto_toggle_callback(self, ctx):
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+            c.do_not_disturb = not c.do_not_disturb
+            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+        return c

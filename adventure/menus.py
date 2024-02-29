@@ -553,7 +553,7 @@ class PrettyBackpackSource(menus.ListPageSource):
             # Opened chests
             if self._items_len == 0:
                 # Tried to open chests but in adventure or backpack is full
-                msg += "```md\n* You tried to go open your loot but you're either occupied or your backpack is full.```"
+                msg += "```md\n* You tried to go open your loot but you're either occupied, your backpack is full, or you don't have enough loot anymore.```"
             else:
                 # Chests opened successful
                 msg += ("```ansi\nYou own {} chests.```".format(self._chests))
@@ -1231,12 +1231,14 @@ class InteractiveBackpackMenu(BaseMenu):
                 await self.do_change_source(interaction)
         else:
             # auto-convert button
-            self._convert_results = await self._convert_callback(self.ctx, self._c)
+            c, convert_results = await self._convert_callback(self.ctx, self._c)
+            self._c = c
+            self._convert_results = convert_results
             await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.red, label="Auto Toggle", row=0)
     async def auto_toggle(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._c = await self._auto_toggle_callback(self.ctx, self._c)
+        self._c = await self._auto_toggle_callback(self.ctx)
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.primary,
@@ -1439,7 +1441,8 @@ class InteractiveBackpackMenu(BaseMenu):
 
     async def do_open_loot(self, interaction, rarity, number):
         self._convert_results = None  # reset convert results whenever loot is opened
-        opened_items = await self._open_loot_callback(self.ctx, self._c, rarity, number)
+        c, opened_items = await self._open_loot_callback(self.ctx, self._c, rarity, number)
+        self._c = c
         await self.do_change_source(interaction, opened_items, number)
 
     async def navigate_page(self, interaction, button):

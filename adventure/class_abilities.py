@@ -349,6 +349,7 @@ class ClassAbilities(AdventureMixin):
                                     )
                                 )
                                 c.heroclass["pet"] = pet_list[pet]
+                                c.heroclass["soulbound_pet"] = {}
                                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
                             else:
                                 await ctx.send(
@@ -421,6 +422,7 @@ class ClassAbilities(AdventureMixin):
                             lang="ansi",
                         )
                         await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
+                        await asyncio.sleep(2)
                         bonus = ""
                         if roll == 1:
                             bonus = _("They approach the creature but trips over their own foot. How embarrassing.")
@@ -565,6 +567,7 @@ class ClassAbilities(AdventureMixin):
                 )
             if c.heroclass["pet"]:
                 c.heroclass["pet"] = {}
+                c.heroclass["soulbound_pet"] = {}
                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
                 return await smart_embed(
                     ctx,
