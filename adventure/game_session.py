@@ -50,7 +50,7 @@ class BaseActionButton(discord.ui.Button):
 
         choice = random.choice(choices[heroclass] + choices["hero"])
         choice = choice.replace("$pet", pet)
-        choice = choice.replace("$monster", self.view.challenge)
+        choice = choice.replace("$monster", self.view.challenge if self.view.easy_mode else "monster")
         weapon = c.get_weapons()
         choice = choice.replace("$weapon", weapon)
         god = await self.view.cog.config.god_name()
@@ -200,7 +200,7 @@ class SpecialActionButton(discord.ui.Button):
         self.label_name = "Special Action"
 
     async def send_cooldown(self, interaction: discord.Interaction, c: Character, cooldown_time: int):
-        cooldown_time = int((c.heroclass["cooldown"]) + cooldown_time)
+        cooldown_time = int((c.heroclass["cooldown"]))
         msg = _(
             "Your hero is currently recovering from the last time "
             "they used this skill or they have just changed their heroclass. "

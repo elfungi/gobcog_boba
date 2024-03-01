@@ -54,7 +54,7 @@ class AdventureResults:
         # add manual users to the next auto list
         saved_auto_users = {}
         for user in manual_users:
-            saved_auto_users[user] = self._num_raids
+            saved_auto_users[user] = self._num_raids * 2
         # auto users can only be added back in if they have been in here for less than num_raids
         raids = self._last_raids.get(ctx.guild.id, [])
         if len(raids) > 0:
@@ -63,7 +63,7 @@ class AdventureResults:
                 count = raid["auto_users"][user]
                 if count is None:
                     # for some reason, if the user wasn't on the previous auto list, reset them
-                    saved_auto_users[user] = self._num_raids
+                    saved_auto_users[user] = self._num_raids * 2
                 elif count == 0:
                     # no more auto for this user
                     continue

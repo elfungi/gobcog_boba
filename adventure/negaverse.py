@@ -24,16 +24,6 @@ log = logging.getLogger("red.cogs.adventure")
 
 class Negaverse(AdventureMixin):
     """This class will handle negaverse interactions"""
-    @commands.hybrid_command(name="negaverse_percent", aliases=["nv%"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
-    @commands.guild_only()
-    async def _negaverse_percent_command(self, ctx: commands.Context):
-        return await smart_embed(
-            ctx,
-            _("nv% has been removed - you can use `nv` with a percentage now (e.g. `nv 50%`)."),
-            ephemeral=True,
-        )
-
     @commands.hybrid_command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.guild_only()

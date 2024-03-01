@@ -99,10 +99,8 @@ class Item:
     def get_equip_level(self):
         lvl = 1
         if self.rarity not in [Rarities.forged]:
-            # epic and legendary stats too similar so make level req's
-            # the same
             rarity_multiplier = max(min(self.rarity.value, 5), 1)
-            mult = 1 + (rarity_multiplier / 10)
+            mult = 1 + (rarity_multiplier / 12)
             positive_stats = (
                     sum([i for i in [self.att, self.int, self.cha, self.dex, self.luck] if i > 0])
                     * mult
@@ -485,7 +483,7 @@ class Character:
             "xpmult": 1,
             "cpmult": 1,
         }
-        added = []
+        added = {}
         for slots in Slot:
             if slots is Slot.two_handed:
                 continue
@@ -493,15 +491,15 @@ class Character:
                 last_slot = slots
                 continue
             item = getattr(self, slots.name)
-            if item is None or item.name in added:
+            if item is None or item.name in added.keys():
                 continue
             if item.set and item.set not in set_names:
-                added.append(item.name)
+                added[item.name] = item
                 set_names.update(
                     {item.set: (item.parts, 1, self._ctx.bot.get_cog("Adventure").SET_BONUSES.get(item.set, []))}
                 )
             elif item.set and item.set in set_names:
-                added.append(item.name)
+                added[item.name] = item
                 parts, count, bonus = set_names[item.set]
                 set_names[item.set] = (parts, count + 1, bonus)
         full_sets = [(s, v[1]) for s, v in set_names.items() if v[1] >= v[0]]
@@ -509,6 +507,9 @@ class Character:
         self.sets = [s for s, _ in full_sets if s]
         for _set, parts in partial_sets:
             set_bonuses = self._ctx.bot.get_cog("Adventure").SET_BONUSES.get(_set, [])
+            set_upgrades = self._ctx.bot.get_cog("Adventure").SET_UPGRADES.get(_set, [])
+
+            highest_required_parts = 0
             for bonus in set_bonuses:
                 required_parts = bonus.get("parts", 100)
                 if required_parts > parts:
@@ -523,6 +524,33 @@ class Character:
                             base[key] += value - 1
                         elif value >= 0:
                             base[key] -= 1 - value
+                highest_required_parts = max(highest_required_parts, required_parts)
+
+            set_items_owned = []
+            for item_name in added.keys():
+                item = added[item_name]
+                if item.set == _set:
+                    set_items_owned.append(item.owned)
+
+            highest_upgrade = {}
+            for set_upgrade in set_upgrades:
+                upgrade = set_upgrade.get("upgrades", 100)
+                count = len([i for j,i in enumerate(set_items_owned) if i >= upgrade])
+                if count >= highest_required_parts:
+                    highest_upgrade = set_upgrade
+
+            if len(highest_upgrade.keys()) > 0:
+                for key, value in highest_upgrade.items():
+                    if key == "upgrades":
+                        continue
+                    if key not in ["cpmult", "xpmult", "statmult"]:
+                        base[key] += value * highest_required_parts
+                    elif key in ["cpmult", "xpmult", "statmult"]:
+                        if value > 1:
+                            base[key] += (value - 1) * highest_required_parts
+                        elif value >= 0:
+                            base[key] -= (1 - value) * highest_required_parts
+
         self.gear_set_bonus = base
         self.gear_set_bonus["cpmult"] = max(0, self.gear_set_bonus["cpmult"])
         self.gear_set_bonus["xpmult"] = max(0, self.gear_set_bonus["xpmult"])
@@ -1374,12 +1402,12 @@ class Character:
         if is_dev:
             return "N/A"
         else:
-            return humanize_number((50 + (self.rebirths * 5)))
+            return humanize_number((50 + self.get_max_level()))
 
     def is_backpack_full(self, is_dev: bool = False):
         if is_dev:
             return False
-        return len(self.backpack) > (50 + (self.rebirths * 5))
+        return len(self.backpack) >= (50 + self.get_max_level())
 
     async def add_to_backpack(self, item: Item, number: int = 1):
         if item:

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import asyncio
 import logging
 import random
 import time
@@ -17,7 +16,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from .bank import bank
 from .charsheet import Character, Item
 from .constants import ANSITextColours, Rarities, Slot
-from .helpers import _get_epoch, escape, is_dev, smart_embed, _sell_base
+from .helpers import escape, is_dev, smart_embed, _sell_base
 
 _ = Translator("Adventure", __file__)
 
@@ -44,6 +43,9 @@ class TraderModal(discord.ui.Modal):
     async def wasting_time(self, interaction: discord.Interaction):
         await smart_embed(None, _("You're wasting my time."), interaction=interaction, ephemeral=True)
 
+    async def only_one(self, interaction: discord.Interaction):
+        await smart_embed(None, _("There's a limit of 1 per customer on this item!"), interaction=interaction, ephemeral=True)
+
     async def on_submit(self, interaction: discord.Interaction):
         if datetime.now(timezone.utc) >= self.view.end_time:
             self.view.stop()
@@ -51,6 +53,7 @@ class TraderModal(discord.ui.Modal):
                 _("{cart_name} has moved onto the next village.").format(cart_name=self.view.cart_name), ephemeral=True
             )
             return
+        spender = interaction.user
         number = self.amount_input.value
 
         if not number:
@@ -64,14 +67,18 @@ class TraderModal(discord.ui.Modal):
         if number < 0:
             await self.wasting_time(interaction)
             return
+        if number > 1 and self.item.rarity == Rarities.legendary or spender in self.view.restricted_users[self.item.name]:
+            await self.only_one(interaction)
+            return
 
         currency_name = await bank.get_currency_name(
             interaction.guild,
         )
         if currency_name.startswith("<"):
             currency_name = "credits"
-        spender = interaction.user
-        price = self.view.items.get(self.item.name, {}).get("price") * number
+
+        item = self.view.items.get(self.item.name, {})
+        price = item.get("price") * number
         if await bank.can_spend(spender, price):
             await bank.withdraw_credits(spender, price)
             async with self.cog.get_lock(spender):
@@ -88,6 +95,8 @@ class TraderModal(discord.ui.Modal):
                     return
                 item = self.item
                 item.owned = number
+                if item.rarity == Rarities.legendary:
+                    self.view.restricted_users[item.name].append(spender)
                 await c.add_to_backpack(item, number=number)
                 await self.cog.config.user(spender).set(await c.to_json(self.ctx, self.cog.config))
                 await interaction.response.send_message(
@@ -141,6 +150,7 @@ class Trader(discord.ui.View):
         self.stock_str = ""
         self.end_time = datetime.now(timezone.utc) + timedelta(seconds=timeout)
         self.cart_name = _("Hawl's brother")
+        self.restricted_users = {}
 
     async def on_timeout(self):
         if self.message is not None:
@@ -197,6 +207,7 @@ class Trader(discord.ui.View):
             currency_name = "credits"
         for (index, item) in enumerate(stock):
             item = stock[index]
+            self.restricted_users[item["item"].name] = []
             if item["item"].slot is Slot.two_handed:  # two handed weapons add their bonuses twice
                 hand = item["item"].slot.get_name()
                 att = item["item"].att * 2
@@ -252,23 +263,23 @@ class Trader(discord.ui.View):
             rarity_roll = random.random()
             is_set_item = False
 
-            # 0.2% set
-            if rarity_roll >= 0.998:
+            # 5% set
+            if rarity_roll >= 0.95:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.set)
                 is_set_item = True
-            # 1.8% ascended
-            elif rarity_roll >= 0.98:
+            # 10% ascended
+            elif rarity_roll >= 0.85:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.ascended)
-            # 15% legendary
-            elif rarity_roll >= 0.83:
+            # 20% legendary
+            elif rarity_roll >= 0.65:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.legendary)
-            # 35% epic
-            elif rarity_roll >= 0.48:
+            # 30% epic
+            elif rarity_roll >= 0.35:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.epic)
-            # 35% rare
-            elif rarity_roll >= 0.13:
+            # 25% rare
+            elif rarity_roll >= 0.10:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.rare)
-            # 13% normal
+            # 10% normal
             else:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.normal)
 

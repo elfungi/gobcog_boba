@@ -1040,7 +1040,8 @@ class BackPackCommands(AdventureMixin):
                 convert_callback=self.interactive_auto_convert_callback,
                 open_loot_callback=self.interactive_open_loot_callback,
                 auto_toggle_callback=self.interactive_auto_toggle_callback,
-                source=PrettyBackpackSource(backpack_items, c.get_higher_balance()),
+                source=PrettyBackpackSource(entries=backpack_items, balance=c.bal, backpack_size_cur=len(c.backpack),
+                                            backpack_size_max=c.get_backpack_slots()),
                 delete_message_after=True,
                 clear_reactions_after=True,
                 timeout=180
@@ -1072,7 +1073,8 @@ class BackPackCommands(AdventureMixin):
                         await bank.set_balance(ctx.author, e.max_balance)
                 c.last_known_currency = await bank.get_balance(ctx.author)
                 c.last_currency_check = time.time()
-                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                c.bal = c.last_known_currency
+            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
             return c, "You sold {} item(s) for {}.".format(humanize_number(items_sold), humanize_number(total_price))
 
     async def interactive_auto_convert_callback(self, ctx, character):
