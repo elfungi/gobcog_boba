@@ -93,13 +93,13 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.0.4"
+    __version__ = "4.6.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
         bank._init(bot)
         self._last_trade = {}
-        self._adv_results = AdventureResults(20)
+        self._adv_results = AdventureResults(10)
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}\N{VARIATION SELECTOR-16}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
@@ -257,6 +257,7 @@ class Adventure(
             equipment_fp = get_path(self) / f"{theme}" / "equipment.json"
             suffixes_fp = get_path(self) / f"{theme}" / "suffixes.json"
             set_bonuses = get_path(self) / f"{theme}" / "set_bonuses.json"
+            set_upgrades = get_path(self) / f"{theme}" / "set_bonuses_upgrades.json"
             action_response = get_path(self) / f"{theme}" / "action_response.json"
             files = {
                 "pets": pets_fp,
@@ -272,6 +273,7 @@ class Adventure(
                 "equipment": equipment_fp,
                 "suffixes": suffixes_fp,
                 "set_bonuses": set_bonuses,
+                "set_upgrades": set_upgrades,
                 "action_response": action_response,
             }
             for name, file in files.items():
@@ -304,6 +306,8 @@ class Adventure(
                 self.SUFFIXES = json.load(f)
             with files["set_bonuses"].open("r") as f:
                 self.SET_BONUSES = json.load(f)
+            with files["set_upgrades"].open("r") as f:
+                self.SET_UPGRADES = json.load(f)
             with files["action_response"].open("r") as f:
                 self.ACTION_RESPONSE = json.load(f)
 
@@ -322,6 +326,7 @@ class Adventure(
                     len(self.EQUIPMENT) > 0,
                     len(self.SUFFIXES) > 0,
                     len(self.SET_BONUSES) > 0,
+                    len(self.SET_UPGRADES) > 0
                 ]
             ):
                 log.critical(f"{theme} theme is invalid, resetting it to the default theme.")
@@ -555,7 +560,6 @@ class Adventure(
             )
         guild_settings = await self.config.guild(ctx.guild).all()
         cooldown = guild_settings["cooldown"]
-
         cooldown_time = guild_settings["cooldown_timer_manual"]
 
         if cooldown + cooldown_time > time.time() and ctx.author.id not in DEV_LIST:
@@ -856,7 +860,7 @@ class Adventure(
             if c.rebirths >= 30:
                 easy_mode = False
             elif c.rebirths >= 20:
-                easy_mode = bool(random.getrandbits(2)) # 25% chance
+                easy_mode = bool(random.getrandbits(1))
             else:
                 easy_mode = True
 
@@ -1523,12 +1527,14 @@ class Adventure(
                         dex = max(c._dex // 10, 1)
                     multiplier = multiplier / dex
                     loss = round(c.bal * multiplier)
+                    pet_loss = self.roll_pet_gold_loss(c, loss)
                     if loss > c.bal:
                         loss = c.bal
                     if user not in [u for u, t in repair_list]:
-                        repair_list.append([user, loss])
-                        if c.bal > loss:
-                            await bank.withdraw_credits(user, loss)
+                        repair_list.append([user, loss, pet_loss])
+                        total_loss = loss + pet_loss
+                        if c.bal > total_loss:
+                            await bank.withdraw_credits(user, total_loss)
                         else:
                             await bank.set_balance(user, 0)
                 c.adventures.update({"loses": c.adventures.get("loses", 0) + 1})
@@ -1538,7 +1544,7 @@ class Adventure(
             result_msg += session.miniboss["defeat"]
             if len(repair_list) > 0:
                 temp_repair = []
-                for user, loss in repair_list:
+                for user, loss, pet_loss in repair_list:
                     if user not in temp_repair:
                         loss_list.append(
                             _("\n{user} used {loss} {currency_name}").format(
@@ -1547,6 +1553,14 @@ class Adventure(
                                 currency_name=currency_name,
                             )
                         )
+                        if pet_loss > 0:
+                            loss_list.append(
+                                _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
+                                    user=user.mention,
+                                    pet_loss=humanize_number(pet_loss),
+                                    currency_name=currency_name,
+                                )
+                            )
                         temp_repair.append(user)
                 if loss_list:
                     self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1571,18 +1585,20 @@ class Adventure(
                         dex = max(c._dex // 10, 1)
                     multiplier = multiplier / dex
                     loss = round(c.bal * multiplier)
-                    if loss > c.bal:
-                        loss = c.bal
+                    pet_loss = self.roll_pet_gold_loss(c, loss)
+                    total_loss = loss + pet_loss
+                    if total_loss > c.bal:
+                        total_loss = c.bal
                     if user not in [u for u, t in repair_list]:
-                        repair_list.append([user, loss])
-                        if c.bal > loss:
-                            await bank.withdraw_credits(user, loss)
+                        repair_list.append([user, loss, pet_loss])
+                        if c.bal > total_loss:
+                            await bank.withdraw_credits(user, total_loss)
                         else:
                             await bank.set_balance(user, 0)
             loss_list = []
             if len(repair_list) > 0:
                 temp_repair = []
-                for user, loss in repair_list:
+                for user, loss, pet_loss in repair_list:
                     if user not in temp_repair:
                         loss_list.append(
                             _("\n{user} used {loss} {currency_name}").format(
@@ -1591,6 +1607,14 @@ class Adventure(
                                 currency_name=currency_name,
                             )
                         )
+                        if pet_loss > 0:
+                            loss_list.append(
+                                _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
+                                    user=user.mention,
+                                    pet_loss=humanize_number(pet_loss),
+                                    currency_name=currency_name,
+                                )
+                            )
                         temp_repair.append(user)
                 if loss_list:
                     self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1649,10 +1673,12 @@ class Adventure(
                             dex = max(c._dex // 10, 1)
                         multiplier = multiplier / dex
                         loss = round(c.bal * multiplier)
-                        if loss > c.bal:
-                            loss = c.bal
+                        pet_loss = self.roll_pet_gold_loss(c, loss)
+                        total_loss = loss + pet_loss
+                        if total_loss > c.bal:
+                            total_loss = c.bal
                         if user not in [u for u, t in repair_list]:
-                            repair_list.append([user, loss])
+                            repair_list.append([user, loss, pet_loss])
                             if c.bal > loss:
                                 await bank.withdraw_credits(user, loss)
                             else:
@@ -1660,7 +1686,7 @@ class Adventure(
                 loss_list = []
                 if len(repair_list) > 0:
                     temp_repair = []
-                    for user, loss in repair_list:
+                    for user, loss, pet_loss in repair_list:
                         if user not in temp_repair:
                             loss_list.append(
                                 _("\n{user} used {loss} {currency_name}").format(
@@ -1669,6 +1695,14 @@ class Adventure(
                                     currency_name=currency_name,
                                 )
                             )
+                            if pet_loss > 0:
+                                loss_list.append(
+                                    _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
+                                        user=user.mention,
+                                        pet_loss=humanize_number(pet_loss),
+                                        currency_name=currency_name,
+                                    )
+                                )
                             temp_repair.append(user)
                     if loss_list:
                         self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1821,12 +1855,14 @@ class Adventure(
                             dex = max(c._dex // 10, 1)
                         multiplier = multiplier / dex
                         loss = round(c.bal * multiplier)
-                        if loss > c.bal:
-                            loss = c.bal
+                        pet_loss = self.roll_pet_gold_loss(c, loss)
+                        total_loss = loss + pet_loss
+                        if total_loss > c.bal:
+                            total_loss = c.bal
                         if user not in [u for u, t in repair_list]:
-                            repair_list.append([user, loss])
-                            if c.bal > loss:
-                                await bank.withdraw_credits(user, loss)
+                            repair_list.append([user, loss, pet_loss])
+                            if c.bal > total_loss:
+                                await bank.withdraw_credits(user, total_loss)
                             else:
                                 await bank.set_balance(user, 0)
                 options = [
@@ -1838,7 +1874,7 @@ class Adventure(
         loss_list = []
         if len(repair_list) > 0:
             temp_repair = []
-            for user, loss in repair_list:
+            for user, loss, pet_loss in repair_list:
                 if user not in temp_repair:
                     loss_list.append(
                         _("\n{user} used {loss} {currency_name}").format(
@@ -1847,6 +1883,14 @@ class Adventure(
                             currency_name=currency_name,
                         )
                     )
+                    if pet_loss > 0:
+                        loss_list.append(
+                            _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
+                                user=user.mention,
+                                pet_loss=humanize_number(pet_loss),
+                                currency_name=currency_name,
+                            )
+                        )
                     temp_repair.append(user)
             if loss_list:
                 self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1931,8 +1975,20 @@ class Adventure(
             elif pet_crit >= 95:
                 # pet crit but player did not, player re-roll with old roll as new baseline
                 new_roll = random.randint(roll, max_roll)
-
         return new_roll
+
+    @staticmethod
+    def roll_pet_gold_loss(c, loss):
+        pet_loss = 0
+        # bonus roll for rangers - 45% base chance to proc + 1% every 20 charisma
+        roll = random.randint(1, 100)
+        target_number = 45 + int(c.total_cha / 20)
+        if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
+            roll = 1  # pick 1 to guarantee bonus if pet allows it
+        if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
+            pet_loss = round(loss * (c.heroclass["pet"]["bonus"] - 1))
+        print("pet gold loss: ", pet_loss)
+        return pet_loss
 
     async def handle_fight(self, guild_id, fumblelist, critlist, attack, magic):
         session = self._sessions[guild_id]
@@ -1983,7 +2039,7 @@ class Adventure(
             roll_perc = roll / max_roll
 
             att_value = c.total_att
-            rebirths = c.rebirths * (3 if c.hc is HeroClasses.berserker else 1)
+            rebirths = c.rebirths * (3 if c.hc is HeroClasses.berserker else 2 if c.hc is HeroClasses.ranger else 1)
             if roll_perc < 0.10 or (roll + att_value) <= 0:
                 if c.hc is HeroClasses.berserker and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, min(15, c.rebirths))
@@ -2058,7 +2114,7 @@ class Adventure(
             roll_perc = roll / max_roll
 
             int_value = c.total_int
-            rebirths = c.rebirths * (3 if c.hc is HeroClasses.wizard else 1)
+            rebirths = c.rebirths * (3 if c.hc is HeroClasses.wizard else 2 if c.hc is HeroClasses.ranger else 1)
             if roll_perc < 0.10 or (roll + int_value) <= 0:
                 # fumble condition
                 msg += _("{}{} almost set themselves on fire.\n").format(failed_emoji, bold(user.display_name))
@@ -2199,7 +2255,7 @@ class Adventure(
                     msg += _("{} blessed like a madman but nobody was there to receive it.\n").format(
                         bold(user.display_name)
                     )
-                if roll_perc < 0.15:
+                if roll_perc < 0.05:
                     pray_att_bonus = 0
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
@@ -2657,13 +2713,7 @@ class Adventure(
                 rarity = Rarities.rare
             else:
                 rarity = Rarities.normal  # 13% to roll common
-        elif chest_type is Rarities.set:
-            if roll <= INITIAL_MAX_ROLL * 0.55:  # 55% to roll set
-                rarity = Rarities.set
-            elif roll <= INITIAL_MAX_ROLL * 0.87:
-                rarity = Rarities.ascended  # 45% to roll legendary
-            else:
-                rarity = Rarities.legendary  # 45% to roll legendary
+        # if chest_type is set, rarity is already set
 
         return await self._genitem(c._ctx, rarity)
 
@@ -2734,8 +2784,8 @@ class Adventure(
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
                 roll = 1  # pick 1 to guarantee bonus if pet allows it
             if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
-                petxp = int(base_userxp * c.heroclass["pet"]["bonus"])
-                petcp = int(base_usercp * c.heroclass["pet"]["bonus"])
+                petxp = int(base_userxp * (c.heroclass["pet"]["bonus"] - 1))
+                petcp = int(base_usercp * (c.heroclass["pet"]["bonus"] - 1))
 
                 if user in session.auto:
                     petxp = petxp // 2

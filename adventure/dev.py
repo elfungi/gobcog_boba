@@ -225,3 +225,20 @@ class DevCommands(AdventureMixin):
             clear_reactions_after=True,
             timeout=60,
         ).start(ctx=ctx)
+
+    @commands.hybrid_command(name="addtoauto", aliases=["a2a"], cooldown_after_parsing=True)
+    @commands.bot_has_permissions(add_reactions=True)
+    @commands.is_owner()
+    async def _add_to_auto(self, ctx: commands.Context, *, player: discord.Member = None):
+        """Add a player to the auto list for the adventure in progress.
+        """
+        session = self._sessions.get(ctx.guild.id, None)
+        if session:
+            if player in session.auto:
+                await ctx.send(box("{} is already in the auto list.").format(player.display_name))
+            else:
+                await ctx.send(box("Adding {} to auto").format(player.display_name))
+            session.auto.append(player)
+            await session.update()
+        else:
+            await ctx.send(box("There's no adventure right now."))
