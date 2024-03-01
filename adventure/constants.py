@@ -167,7 +167,7 @@ class Rarities(Enum):
         return {
             Rarities.epic: 0.5,
             Rarities.legendary: 0.75,
-            Rarities.ascended: 0.5,
+            Rarities.ascended: 0.90,
         }.get(self)
 
     def get_name(self) -> str:

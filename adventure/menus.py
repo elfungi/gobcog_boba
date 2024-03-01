@@ -12,7 +12,7 @@ from redbot.vendored.discord.ext import menus
 
 from .bank import bank
 from .charsheet import Character
-from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours
+from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours, Slots
 from .converters import process_argparse_stat
 
 _ = Translator("Adventure", __file__)
@@ -409,9 +409,12 @@ class EconomySource(menus.ListPageSource):
 
 
 class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], balance=0, include_sets=False, body_msg="", contextual_msg=""):
+    def __init__(self, entries: List[Dict], balance=0, backpack_size_cur=0, backpack_size_max=0,
+                 include_sets=False, body_msg="", contextual_msg=""):
         super().__init__(entries, per_page=10)
         self.balance = balance
+        self.backpack_size_cur = backpack_size_cur
+        self.backpack_size_max = backpack_size_max
         self.include_sets = include_sets
         self.body_msg = body_msg
         self.contextual_msg = contextual_msg
@@ -424,7 +427,11 @@ class PrettyBackpackSource(menus.ListPageSource):
         return True
 
     def build_balance_msg(self, menu: menus.MenuPages):
-        return "```{}'s Backpack - {} gold```".format(menu.ctx.author, humanize_number(self.balance))
+        return "```{}'s Backpack: {}/{} - {} gold```".format(menu.ctx.author,
+                                                             humanize_number(self.backpack_size_cur),
+                                                             humanize_number(self.backpack_size_max),
+                                                             humanize_number(self.balance),
+                                                             )
 
     def build_item_headers(self):
         header = (
@@ -516,6 +523,7 @@ class PrettyBackpackSource(menus.ListPageSource):
     @staticmethod
     def wrap_md(msg):
         return "```md\n{}```".format(msg)
+
 
 class StopButton(discord.ui.Button):
     def __init__(
@@ -1289,7 +1297,8 @@ class InteractiveBackpackMenu(BaseMenu):
                        label="Stats",
                        row=3)
     async def filter_group_1(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        input_mapping = {key: self._stats[key] for key in sorted(self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'})}
+        input_mapping = {key: self._stats[key] for key in
+                         sorted(self._stats.keys() & {'att', 'cha', 'int', 'dex', 'luk'})}
         modal = InteractiveBackpackFilterModal(self, self.ctx, "Stats Filters Group 1", input_mapping)
         await interaction.response.send_modal(modal)
 
@@ -1376,7 +1385,7 @@ class InteractiveBackpackMenu(BaseMenu):
                                                                  level=lvl_filter)
 
     async def do_change_source(self, interaction, items=None, contextual_msg=""):
-        balance = self._c.get_higher_balance()
+        balance = self._c.bal
         backpack_items = await self.get_backpack_items() if items is None else items
         include_sets = Rarities.set in self._rarities or self._current_view == "loot"
         body_msg = ""
@@ -1386,6 +1395,10 @@ class InteractiveBackpackMenu(BaseMenu):
                 "Are you sure you want to sell these {} listings and their copies? "
                 "Press the confirm button to proceed."
             ).format(len(backpack_items))
+            for (i, item) in enumerate(backpack_items):
+                if item["rarity"] == Rarities.set:
+                    contextual_msg += "\n\n! WARNING: You are about to sell a Set piece !"
+                    break
         elif self._current_view == "loot":
             chests = "You own {} chests".format(self._c.treasure.ansi)
             if items is None:
@@ -1402,6 +1415,8 @@ class InteractiveBackpackMenu(BaseMenu):
         await self.change_source(
             source=PrettyBackpackSource(entries=backpack_items,
                                         balance=balance,
+                                        backpack_size_cur=len(self._c.backpack),
+                                        backpack_size_max=self._c.get_backpack_slots(),
                                         include_sets=include_sets,
                                         body_msg=body_msg,
                                         contextual_msg=contextual_msg),

@@ -542,6 +542,10 @@ class AdventureMixin(ABC):
     async def _adventurestats(self, ctx: commands.Context):
         raise NotImplementedError()
 
+    @abstractmethod
+    async def _add_to_auto(self, ctx: commands.Context, *, player=None):
+        raise NotImplementedError()
+
     #######################################################################
     # economy.py                                                          #
     #######################################################################
