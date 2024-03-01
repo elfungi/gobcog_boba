@@ -2255,7 +2255,7 @@ class Adventure(
                     msg += _("{} blessed like a madman but nobody was there to receive it.\n").format(
                         bold(user.display_name)
                     )
-                if roll_perc < 0.05:
+                if roll_perc < 0.10:
                     pray_att_bonus = 0
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
