@@ -60,11 +60,13 @@ class AdventureResults:
         if len(raids) > 0:
             raid = raids[-1]
             for user in auto_users:
-                count = raid["auto_users"][user]
-                if count is None:
-                    # for some reason, if the user wasn't on the previous auto list, reset them
-                    saved_auto_users[user] = self._num_raids * 2
-                elif count == 0:
+                if user not in raid["auto_users"]:
+                    # if the user wasn't on the previous auto list, reset them
+                    count = self._num_raids * 2
+                    saved_auto_users[user] = count
+                else:
+                    count = raid["auto_users"][user]
+                if count == 0:
                     # no more auto for this user
                     continue
                 else:

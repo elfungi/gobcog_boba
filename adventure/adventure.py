@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.6.2"
+    __version__ = "4.6.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -902,7 +902,6 @@ class Adventure(
             timer = 60 * 3
             no_monster = random.randint(0, 100) == 25
         # if ctx.author.id in DEV_LIST:
-        # timer = 20
         auto_users = self._adv_results.get_last_auto_users(ctx)
         for user in auto_users:
             try:
@@ -912,7 +911,6 @@ class Adventure(
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-
         self._sessions[ctx.guild.id] = GameSession(
             ctx=ctx,
             cog=self,
@@ -1528,11 +1526,11 @@ class Adventure(
                     multiplier = multiplier / dex
                     loss = round(c.bal * multiplier)
                     pet_loss = self.roll_pet_gold_loss(c, loss)
-                    if loss > c.bal:
-                        loss = c.bal
-                    if user not in [u for u, _, _ in repair_list]:
+                    total_loss = loss + pet_loss
+                    if total_loss > c.bal:
+                        total_loss = c.bal
+                    if user not in [u for u, a, b in repair_list]:
                         repair_list.append([user, loss, pet_loss])
-                        total_loss = loss + pet_loss
                         if c.bal > total_loss:
                             await bank.withdraw_credits(user, total_loss)
                         else:
@@ -1589,7 +1587,7 @@ class Adventure(
                     total_loss = loss + pet_loss
                     if total_loss > c.bal:
                         total_loss = c.bal
-                    if user not in [u for u, _, _ in repair_list]:
+                    if user not in [u for u, a, b in repair_list]:
                         repair_list.append([user, loss, pet_loss])
                         if c.bal > total_loss:
                             await bank.withdraw_credits(user, total_loss)
@@ -1677,7 +1675,7 @@ class Adventure(
                         total_loss = loss + pet_loss
                         if total_loss > c.bal:
                             total_loss = c.bal
-                        if user not in [u for u, _, _ in repair_list]:
+                        if user not in [u for u, a, b in repair_list]:
                             repair_list.append([user, loss, pet_loss])
                             if c.bal > loss:
                                 await bank.withdraw_credits(user, total_loss)
@@ -1859,7 +1857,7 @@ class Adventure(
                         total_loss = loss + pet_loss
                         if total_loss > c.bal:
                             total_loss = c.bal
-                        if user not in [u for u, _, _ in repair_list]:
+                        if user not in [u for u, a, b in repair_list]:
                             repair_list.append([user, loss, pet_loss])
                             if c.bal > total_loss:
                                 await bank.withdraw_credits(user, total_loss)
