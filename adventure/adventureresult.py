@@ -71,6 +71,11 @@ class AdventureResults:
                     continue
                 else:
                     saved_auto_users[user] = count - 1
+        else:
+            for user in auto_users:
+                count = self._num_raids * 2
+                saved_auto_users[user] = count - 1
+
         for user in exclusion_users:
             saved_auto_users.pop(user, None)
 

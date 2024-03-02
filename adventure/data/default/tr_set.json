@@ -113,12 +113,12 @@
     "Vita-Charged Titanshard": {"slot": ["charm"], "set": "Titanic Empowerment", "parts": 2, "att": 60, "cha": 0, "int": 0, "dex": 0, "luck": 0, "rarity": "set"},
     "Void-Twisted Titanshard": {"slot": ["ring"], "set": "Titanic Empowerment", "parts": 2, "att": 60, "cha": 0, "int": 0, "dex": 0, "luck": 0, "rarity": "set"},
 
-    "Demonbane Necklace": {"slot": ["neck"], "set": "Demonbane Armor", "parts": 6, "att": 15, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
-    "Demonbane Katana": {"slot": ["left", "right"], "set": "Demonbane Armor", "parts": 6, "att": 20, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
-    "Demonbane Sabatons": {"slot": ["boots"], "set": "Demonbane Armor", "parts": 6, "att": 25, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
+    "Demonbane Necklace": {"slot": ["neck"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
+    "Demonbane Katana": {"slot": ["left", "right"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
+    "Demonbane Sabatons": {"slot": ["boots"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
     "Demonbane Charm": {"slot": ["charm"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
-    "Demonbane Leggings": {"slot": ["legs"], "set": "Demonbane Armor", "parts": 6, "att": 35, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
-    "Ring Of Demonbane": {"slot": ["ring"], "set": "Demonbane Armor", "parts": 6, "att": 40, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
+    "Demonbane Leggings": {"slot": ["legs"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
+    "Ring Of Demonbane": {"slot": ["ring"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12, "rarity": "set"},
 
     "King Solomons Crown": {"slot": ["head"], "set": "The King of Mages", "parts": 9, "att": 0, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},
     "King Solomons Torc": {"slot": ["neck"], "set": "The King of Mages", "parts": 9, "att": 0, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},

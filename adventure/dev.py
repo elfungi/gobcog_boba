@@ -6,7 +6,7 @@ from string import ascii_letters, digits
 from typing import Optional, Union
 
 import discord
-from redbot.core import commands
+from redbot.core import commands, bot
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import bold, box, humanize_number, pagify
 
@@ -14,8 +14,7 @@ from .abc import AdventureMixin
 from .bank import bank
 from .cart import Trader
 from .charsheet import Character
-from .constants import DEV_LIST, Rarities, Slot
-from .converters import RarityConverter, SlotConverter
+from .constants import DEV_LIST
 from .helpers import escape, is_dev
 from .menus import BaseMenu, SimpleSource
 
@@ -77,31 +76,6 @@ class DevCommands(AdventureMixin):
         await trader.on_timeout()
 
     @commands.command()
-    @commands.is_owner()
-    async def genitems(
-        self,
-        ctx: commands.Context,
-        rarity: RarityConverter,
-        slot: SlotConverter,
-        num: int = 1,
-    ):
-        """[Dev] Generate random items."""
-        if not await self.no_dev_prompt(ctx):
-            return
-        user = ctx.author
-        slot = slot.lower()
-        async with self.get_lock(user):
-            try:
-                c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
-                return
-            for _loop_counter in range(num):
-                await c.add_to_backpack(await self._genitem(ctx, rarity, slot))
-            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
-        await ctx.invoke(self._backpack)
-
-    @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
     async def copyuser(self, ctx: commands.Context, user_id: int):
@@ -151,7 +125,6 @@ class DevCommands(AdventureMixin):
                     withdraw = bal
                     await bank.set_balance(target, 0)
                 character_data = await c.rebirth(dev_val=rebirth_level)
-                print("Rebirthed:", character_data)
                 await self.config.user(target).set(character_data)
                 await ctx.send(
                     content=box(
@@ -226,19 +199,36 @@ class DevCommands(AdventureMixin):
             timeout=60,
         ).start(ctx=ctx)
 
-    @commands.hybrid_command(name="addtoauto", aliases=["a2a"], cooldown_after_parsing=True)
-    @commands.bot_has_permissions(add_reactions=True)
+    @commands.command(name="addtoauto", aliases=["a2a"])
     @commands.is_owner()
-    async def _add_to_auto(self, ctx: commands.Context, *, player: discord.Member = None):
-        """Add a player to the auto list for the adventure in progress.
+    async def _add_to_auto(self, ctx: commands.Context, *, players: str = None):
+        """Add players to the auto list for the adventure in progress.
+        `players` is a list of comma separated player IDs.
+        """
+        player_ids = [p.strip() for p in players.split(",")]
+        members = [await self.bot.get_or_fetch_member(ctx.guild, player) for player in player_ids]
+        session = self._sessions.get(ctx.guild.id, None)
+        if session:
+            session_lists = session.fight + session.magic + session.talk + session.pray + session.auto
+            for player in members:
+                if player in session_lists:
+                    await ctx.send(box("{} ({}) is already part of the adventure.").format(player.display_name, str(player.id)))
+                else:
+                    await ctx.send(box("Adding {} ({}) to auto.").format(player.display_name, str(player.id)))
+                    session.auto.append(player)
+                await session.update()
+        else:
+            await ctx.send(box("There's no adventure right now."))
+
+    @commands.command(name="listauto")
+    @commands.is_owner()
+    async def _listauto(self, ctx: commands.Context):
+        """Get a list of users currently in the adventure (or previously on adventure if nothing in progress).
         """
         session = self._sessions.get(ctx.guild.id, None)
         if session:
-            if player in session.auto:
-                await ctx.send(box("{} is already in the auto list.").format(player.display_name))
-            else:
-                await ctx.send(box("Adding {} to auto").format(player.display_name))
-            session.auto.append(player)
-            await session.update()
+            session_list = session.fight + session.magic + session.talk + session.pray + session.auto
         else:
-            await ctx.send(box("There's no adventure right now."))
+            session_list = self._adv_results.get_last_auto_users(ctx)
+        ids = [str(player.id) for player in session_list]
+        await ctx.send(box("{}").format(",".join(ids)))

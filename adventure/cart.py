@@ -67,7 +67,7 @@ class TraderModal(discord.ui.Modal):
         if number < 0:
             await self.wasting_time(interaction)
             return
-        if number > 1 and self.item.rarity == Rarities.set or spender in self.view.restricted_users[self.item.name]:
+        if number > 1 and self.item.rarity == Rarities.legendary or spender in self.view.restricted_users[self.item.name]:
             await self.only_one(interaction)
             return
 
@@ -95,7 +95,7 @@ class TraderModal(discord.ui.Modal):
                     return
                 item = self.item
                 item.owned = number
-                if item.rarity == Rarities.set:
+                if item.rarity == Rarities.legendary:
                     self.view.restricted_users[item.name].append(spender)
                 await c.add_to_backpack(item, number=number)
                 await self.cog.config.user(spender).set(await c.to_json(self.ctx, self.cog.config))

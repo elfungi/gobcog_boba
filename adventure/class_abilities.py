@@ -294,7 +294,7 @@ class ClassAbilities(AdventureMixin):
                     pet_choices = list(pet_list.keys())
                     pet = random.choice(pet_choices) if not soulbound_pet else soulbound_pet.get("name")
                     roll = random.randint(1, 50)
-                    dipl_value = c.total_cha + (c.total_int // 3) + (c.luck // 2)
+                    dipl_value = c.total_cha
                     pet_reqs = pet_list[pet].get("bonuses", {}).get("req", {})
                     pet_msg4 = ""
                     can_catch = True
@@ -337,20 +337,38 @@ class ClassAbilities(AdventureMixin):
                         await msg.edit(view=None)
                         if view.confirmed:
                             if can_catch and dipl_value > pet_list[pet]["cha"]:
-                                await ctx.send(
-                                    box(
-                                        _(
-                                            "{author} immediately recognizes the {pet} from a former life."
-                                            "\nThe two reunite and set off on the next part of their adventure."
-                                        ).format(
-                                            author=escape(ctx.author.display_name), pet=pet
-                                        ),
-                                        lang="ansi",
+                                roll = 0
+                                if pet in ["Albedo", "Rubedo", "Guardians of Nazarick"]:
+                                    roll = random.randint(0, 5)
+                                if roll == 0:
+                                    await ctx.send(
+                                        box(
+                                            _(
+                                                "{author} immediately recognizes the {pet} from a former life."
+                                                "\nThe two reunite and set off on the next part of their adventure."
+                                            ).format(
+                                                author=escape(ctx.author.display_name), pet=pet
+                                            ),
+                                            lang="ansi",
+                                        )
                                     )
-                                )
-                                c.heroclass["pet"] = pet_list[pet]
+                                    c.heroclass["pet"] = pet_list[pet]
+                                else:
+                                    await ctx.send(
+                                        box(
+                                            _(
+                                                "{author} tries to approach the {pet} but the two seem have grown apart."
+                                                "\nThe {pet}'s eyes twinkles as if it's saying, 'It's not you, it's me.'"
+                                                "\nThe {pet} leaves the area, perhaps you'll be reunited one day."
+                                            ).format(
+                                                author=escape(ctx.author.display_name), pet=pet
+                                            ),
+                                            lang="ansi",
+                                        )
+                                    )
                                 c.heroclass["soulbound_pet"] = {}
                                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+
                             else:
                                 await ctx.send(
                                     box(
@@ -392,13 +410,13 @@ class ClassAbilities(AdventureMixin):
                         pet_crit = pet_list[pet].get("bonuses", {}).get("crit", 0)
                         if pet_crit >= 80:
                             pet_crit_str = "It's as mighty as an Elder Dragon!"
-                        elif pet_crit >= 40:
+                        elif pet_crit >= 60:
                             pet_crit_str = "It has the demeanor of a seasoned fighter!"
-                        elif pet_crit >= 20:
+                        elif pet_crit >= 40:
                             pet_crit_str = "It's putting on a proud display of strength."
-                        elif pet_crit >= 10:
+                        elif pet_crit >= 20:
                             pet_crit_str = "It looks like it could use some fighting experience."
-                        elif pet_crit >= 2:
+                        elif pet_crit >= 10:
                             pet_crit_str = "It doesn't seem like it's going to help win many battles."
                         else:
                             pet_crit_str = "It has spirit... No, never mind. It fell over."

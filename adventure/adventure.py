@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.6.3"
+    __version__ = "4.6.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -911,6 +911,7 @@ class Adventure(
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
+        #timer = 20
         self._sessions[ctx.guild.id] = GameSession(
             ctx=ctx,
             cog=self,
@@ -2039,7 +2040,7 @@ class Adventure(
             rebirths = c.rebirths * (3 if c.hc is HeroClasses.berserker else 2 if c.hc is HeroClasses.ranger else 1)
             if roll_perc < 0.10 or (roll + att_value) <= 0:
                 if c.hc is HeroClasses.berserker and c.heroclass["ability"]:
-                    bonus_roll = random.randint(5, min(15, c.rebirths))
+                    bonus_roll = random.randint(5, max(15, c.rebirths))
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + att_value + rebirths) * bonus_multi))
                     attack += int((roll - bonus + att_value) / pdef)  # no pierce bonus for berserker if they fumble
@@ -2056,7 +2057,7 @@ class Adventure(
             elif roll_perc > 0.95 or c.hc is HeroClasses.berserker:
                 crit_str = ""
                 crit_bonus = 0
-                base_bonus = random.randint(5, min(15, c.rebirths)) + rebirths
+                base_bonus = random.randint(5, max(15, c.rebirths)) + rebirths
                 berserker_ability_used = False
                 if roll_perc > 0.95:
                     msg += _("{user} landed a critical hit.\n").format(user=bold(user.display_name))
@@ -2065,7 +2066,7 @@ class Adventure(
                     crit_str = f"{self.emojis.crit} {humanize_number(crit_bonus)}"
                 if c.hc is HeroClasses.berserker and c.heroclass["ability"]:
                     berserker_ability_used = True
-                    base_bonus = (random.randint(1, min(15, c.rebirths)) + 5) * (rebirths // 2)
+                    base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
                 base_str = f"{self.emojis.crit}️ {humanize_number(base_bonus)}"
 
                 if berserker_ability_used and c.rebirths >= HC_VETERAN_RANK:
@@ -2119,7 +2120,7 @@ class Adventure(
                 fumble_count += 1
                 if c.hc is HeroClasses.wizard and c.heroclass["ability"]:
                     # wizard ability used but fumbled the roll, still give bonus but at a reduced rate
-                    bonus_roll = random.randint(5, min(15, c.rebirths))
+                    bonus_roll = random.randint(5, max(15, c.rebirths))
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + int_value + rebirths) * bonus_multi))
                     if c.rebirths < HC_VETERAN_RANK:
@@ -2144,7 +2145,7 @@ class Adventure(
                 crit_str = ""
                 crit_bonus = 0
                 double_cast_bonus = 0
-                base_bonus = random.randint(5, min(15, c.rebirths)) + rebirths
+                base_bonus = random.randint(5, max(15, c.rebirths)) + rebirths
                 base_str = f"{self.emojis.magic_crit}️{humanize_number(base_bonus)}"
                 if roll_perc > 0.95:
                     msg += _("{} had a surge of energy.\n").format(bold(user.display_name))
@@ -2406,7 +2407,7 @@ class Adventure(
             roll_perc = roll / max_roll
             if roll_perc < 0.10 or (roll + dipl_value) <= 0:
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
-                    bonus = random.randint(5, min(15, c.rebirths))
+                    bonus = random.randint(5, max(15, c.rebirths))
                     dipl_bonus = int((roll - bonus + dipl_value + rebirths))
                     if c.rebirths >= HC_VETERAN_RANK:
                         dipl_bonus = int(0.01 * len(talk_list) * dipl_bonus)

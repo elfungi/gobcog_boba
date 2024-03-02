@@ -513,14 +513,6 @@ class AdventureMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def _genitem(self, ctx: commands.Context, rarity: Optional[Rarities] = None, slot: str = None) -> Item:
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def genitems(self, ctx: commands.Context, rarity: str, slot: str, num: int = 1):
-        raise NotImplementedError()
-
-    @abstractmethod
     async def copyuser(self, ctx: commands.Context, user_id: int):
         raise NotImplementedError()
 
@@ -544,6 +536,10 @@ class AdventureMixin(ABC):
 
     @abstractmethod
     async def _add_to_auto(self, ctx: commands.Context, *, player=None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def _listauto(self, ctx: commands.Context):
         raise NotImplementedError()
 
     #######################################################################

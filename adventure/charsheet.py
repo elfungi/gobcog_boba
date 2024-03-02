@@ -385,7 +385,7 @@ class Character:
             ]:
                 return
 
-            if self.heroclass["pet"]["cha"] > (self.total_cha + (self.total_int // 3) + (self.luck // 2)):
+            if self.heroclass["pet"]["cha"] > self.total_cha:
                 self.heroclass["pet"] = {}
                 return
 
