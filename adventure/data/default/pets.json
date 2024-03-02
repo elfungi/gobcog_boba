@@ -1,7 +1,7 @@
 {
-    "Albedo": {"name": "Albedo", "bonus": 2.0, "cha": 250, "bonuses": {"always": true, "crit": 85}},
+    "Albedo": {"name": "Albedo", "bonus": 2.0, "cha": 200, "bonuses": {"always": true, "crit": 85}},
     "Guardians of Nazarick": {"name": "Guardians of Nazarick", "bonus": 5, "cha": 1000000, "bonuses": {"always": true, "crit": 100, "req": {"set": "Ainz Ooal Gown"}}},
-    "Rubedo": {"name": "Rubedo", "bonus": 3.0, "cha": 350, "bonuses": {"always": true, "crit": 95}},
+    "Rubedo": {"name": "Rubedo", "bonus": 3.0, "cha": 300, "bonuses": {"always": true, "crit": 95}},
     "angry armadillo": {"name": "angry armadillo", "bonuses": {"always": false, "crit": 44}, "cha": 12, "bonus": 1.1},
     "angry bear": {"name": "angry bear", "bonuses": {"always": false, "crit": 57}, "cha": 45, "bonus": 1.31},
     "angry boar": {"name": "angry boar", "bonuses": {"always": false, "crit": 44}, "cha": 13, "bonus": 1.2},
