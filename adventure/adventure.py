@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.0"
+    __version__ = "4.7.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -2083,7 +2083,7 @@ class Adventure(
                         base_str = f"🏹{humanize_number(dmg_bonus)} x {num_hits}"
                 else:
                     attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
-                bonus = f"{crit_str} + {base_str}"
+                bonus = f"{crit_str} + {base_str}" if crit_str else f"{base_str}"
                 report += (
                     f"{bold(user.display_name)}: "
                     f"{self.emojis.dice}({roll}) + "
@@ -2762,8 +2762,8 @@ class Adventure(
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
 
-            userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c.total_stats / 35)), 0))
-            usercp = int(cp + max((cp * 0.1 * min(1000, c.total_stats / 25)), 0))
+            userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c.total_stats / 50)), 0))
+            usercp = int(cp + max((cp * 0.1 * min(1000, c.total_stats / 35)), 0))
 
             base_userxp = userxp
             base_usercp = usercp
