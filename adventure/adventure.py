@@ -2162,7 +2162,7 @@ class Adventure(
                     crit_str = f"{self.emojis.crit}{humanize_number(crit_bonus)}"
                 if c.hc is HeroClasses.wizard and c.heroclass["ability"]:
                     # wizard ability used
-                    base_bonus = (random.randint(1, 10) + 5) * (rebirths // 2)
+                    base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
                     base_str = f"{self.emojis.magic_crit}️{humanize_number(base_bonus)}"
                     if c.rebirths >= HC_VETERAN_RANK:
                         double_cast_bonus = round(0.65 * base_bonus)
@@ -2438,7 +2438,7 @@ class Adventure(
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
                     base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
                     if c.rebirths >= HC_VETERAN_RANK:
-                        dipl_bonus = int(0.12 * len(talk_list) * base_bonus)
+                        dipl_bonus = int(0.08 * len(talk_list) * base_bonus)
                         msg += (_("{}'s music rallied the party! +{}{}\n")
                                 .format(bold(user.display_name), self.emojis.talk, humanize_number(dipl_bonus)))
 
