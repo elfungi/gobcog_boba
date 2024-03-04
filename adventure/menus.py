@@ -5,14 +5,15 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import discord
 from discord import Interaction
+from discord._types import ClientT
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import escape, humanize_number
 from redbot.vendored.discord.ext import menus
 
 from .bank import bank
-from .charsheet import Character
-from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours, Slots
+from .charsheet import Character, Item
+from .constants import Rarities, ANSI_ESCAPE, ANSI_CLOSE, ANSITextColours, Slot
 from .converters import process_argparse_stat
 
 _ = Translator("Adventure", __file__)
@@ -408,16 +409,10 @@ class EconomySource(menus.ListPageSource):
         return embed
 
 
-class PrettyBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], balance=0, backpack_size_cur=0, backpack_size_max=0,
-                 include_sets=False, body_msg="", contextual_msg=""):
-        super().__init__(entries, per_page=10)
-        self.balance = balance
-        self.backpack_size_cur = backpack_size_cur
-        self.backpack_size_max = backpack_size_max
+class BaseBackpackSource(menus.ListPageSource):
+    def __init__(self, entries: List[Dict], per_page=10, include_sets=False):
+        super().__init__(entries, per_page=per_page)
         self.include_sets = include_sets
-        self.body_msg = body_msg
-        self.contextual_msg = contextual_msg
         self.col_name_len = 64
         self.col_slot_len = 8
         self.col_attr_len = 6
@@ -426,69 +421,91 @@ class PrettyBackpackSource(menus.ListPageSource):
     def is_paginating(self):
         return True
 
-    def build_balance_msg(self, menu: menus.MenuPages):
-        return "```{}'s Backpack: {}/{} - {} gold```".format(menu.ctx.author,
-                                                             humanize_number(self.backpack_size_cur),
-                                                             humanize_number(self.backpack_size_max),
-                                                             humanize_number(self.balance),
-                                                             )
-
-    def build_item_headers(self):
+    def build_item_headers(self, exclude_cols=None):
+        if exclude_cols is None:
+            exclude_cols = []
         header = (
             f"{self.format_ansi('Name'):{self.col_name_len}}"  # use ansi on this field to match spacing on table
             f"{'Slot':{self.col_slot_len}}"
-            f"{'ATT':{self.col_attr_len}}"
-            f"{'CHA':{self.col_attr_len}}"
-            f"{'INT':{self.col_attr_len}}"
-            f"{'DEX':{self.col_attr_len}}"
-            f"{'LUK':{self.col_attr_len}}"
-            f"{'QTY':{self.col_attr_len}}"
-            f"{'DEG':{self.col_attr_len}}"
-            f"{'LVL':{self.col_attr_len}}"
         )
+        for col in ['ATT', 'CHA', 'INT', 'DEX', 'LUK', 'QTY', 'DEG', 'LVL']:
+            if col not in exclude_cols:
+                if col == 'LVL':
+                    header += f"{self.format_ansi(col):{self.col_attr_len + 8}}"
+                else:
+                    header += f"{col:{self.col_attr_len}}"
         if self.include_sets:
-            header += f"{'  Set':{self.col_set_len}}"
+            header += f"{'Set':{self.col_set_len}}"
         return header
 
-    def build_item_data(self, entries: List[Dict], start_position):
+    def build_item_data(self, entries: List[Dict], start_position=0, exclude_cols=None):
+        if not exclude_cols:
+            exclude_cols = []
         data = []
         for (i, item) in enumerate(entries, start=start_position):
             name = item["name"]
-            slot = "2-Hand" if item["slot"] == "Two Handed" else item["slot"]
-            level = item["lvl"]
-            att = item["att"]
-            cha = item["cha"]
-            _int = item["int"]
-            dex = item["dex"]
-            luk = item["luck"]
-            owned = item["owned"]
-            degrade = item["degrade"]
+            slot = "2-Hand" if item["slot"] == "Two Handed" or item["slot"] == Slot.two_handed else item["slot"]
             _set = item["set"]
             rarity = item["rarity"]
             cannot_equip = item["cannot_equip"]
 
-            deg_value = degrade if rarity in [Rarities.legendary, Rarities.event,
-                                              Rarities.ascended] and degrade >= 0 else ""
             set_value = _set if rarity in [Rarities.set] else ""
-
             ansi_name = rarity.as_ansi(name)
-            level_value = self.format_ansi(level, ANSITextColours.red) if cannot_equip else self.format_ansi(level)
             i_data = (
                 f"{ansi_name:{self.col_name_len}}"
                 f"{slot:{self.col_slot_len}}"
-                f"{str(att):{self.col_attr_len}}"
-                f"{str(cha):{self.col_attr_len}}"
-                f"{str(_int):{self.col_attr_len}}"
-                f"{str(dex):{self.col_attr_len}}"
-                f"{str(luk):{self.col_attr_len}}"
-                f"{str(owned):{self.col_attr_len}}"
-                f"{str(deg_value):{self.col_attr_len}}"
-                f"{level_value:{self.col_attr_len}}"
             )
+            for col in ["att", "cha", "int", "dex", "luk", "owned", "degrade", "lvl"]:
+                if col not in exclude_cols:
+                    value = item.get(col, 0)
+                    col_len = self.col_attr_len
+                    if col == "degrade":
+                        value = value if rarity in [Rarities.legendary, Rarities.event,
+                                                    Rarities.ascended] and value >= 0 else ""
+                    elif col == "lvl":
+                        value = self.format_ansi(value, ANSITextColours.red) if cannot_equip else self.format_ansi(
+                            value)
+                        col_len += 8
+                    i_data += f"{str(value):{col_len}}"
+
             if self.include_sets:
-                i_data += f"     {set_value:{self.col_set_len}}"
+                i_data += f"{set_value:{self.col_set_len}}"
             data.append(i_data)
         return data
+
+    @staticmethod
+    def format_ansi(text, ansi_code=ANSITextColours.white):
+        return f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
+
+    @staticmethod
+    def wrap_ansi(msg):
+        return "```ansi\n{}```".format(msg)
+
+    @staticmethod
+    def wrap_md(msg):
+        return "```md\n{}```".format(msg)
+
+    @staticmethod
+    def wrap_ini(msg):
+        return "```ini\n{}```".format(msg)
+
+
+class PrettyBackpackSource(BaseBackpackSource):
+    def __init__(self, entries: List[Dict], balance=0, backpack_size_cur=0, backpack_size_max=0,
+                 include_sets=True, body_msg="", contextual_msg=""):
+        super().__init__(entries, per_page=10, include_sets=include_sets)
+        self.balance = balance
+        self.backpack_size_cur = backpack_size_cur
+        self.backpack_size_max = backpack_size_max
+        self.body_msg = body_msg
+        self.contextual_msg = contextual_msg
+
+    def build_balance_msg(self, menu: menus.MenuPages):
+        return "```{}'s Backpack: {}/{} - {} gold```".format(menu.ctx.author.display_name,
+                                                             humanize_number(self.backpack_size_cur),
+                                                             humanize_number(self.backpack_size_max),
+                                                             humanize_number(self.balance),
+                                                             )
 
     async def format_page(self, menu: menus.MenuPages, entries: List[Dict]):
         start_position = (menu.current_page * self.per_page) + 1
@@ -512,17 +529,156 @@ class PrettyBackpackSource(menus.ListPageSource):
 
         return msg
 
-    @staticmethod
-    def format_ansi(text, ansi_code=ANSITextColours.white):
-        return f"{ANSI_ESCAPE}[{ansi_code}m{text}{ANSI_CLOSE}"
+
+class PrettySetInfoSource(BaseBackpackSource):
+    def __init__(self, entries: List[Dict], set_name=None, character_set_count=-1):
+        super().__init__(entries, per_page=1)
+        self._character_set_count = character_set_count
+        self._set_name = set_name
+        self.col_attr_len = 10
+        self.col_set_len = 50
+
+    def build_intro(self, menu: menus.MenuPages):
+        msg = "{}'s Set Info".format(menu.ctx.author.display_name)
+        if menu.current_page == 0:
+            msg += ": Currently Equipped"
+        else:
+            msg += ": {}".format(self.format_ansi(self._set_name, ANSITextColours.red))
+        return msg
+
+    def build_set_info_header(self):
+        header = (
+            f"{self.format_ansi('Set Bonus'):{self.col_set_len}}"  # use ansi on this field to match spacing on table
+            f"{'ATT':{self.col_attr_len}}"
+            f"{'CHA':{self.col_attr_len}}"
+            f"{'INT':{self.col_attr_len}}"
+            f"{'DEX':{self.col_attr_len}}"
+            f"{'LUK':{self.col_attr_len}}"
+            f"{'Stats':{self.col_attr_len}}"
+            f"{'EXP':{self.col_attr_len}}"
+            f"{'Gold':{self.col_attr_len}}"
+        )
+        return header
+
+    def format_data(self, bonus):
+        att = bonus["att"]
+        cha = bonus["cha"]
+        _int = bonus["int"]
+        dex = bonus["dex"]
+        luk = bonus["luck"]
+        stats = self.format_mult(bonus["statmult"])
+        exp = self.format_mult(bonus["xpmult"])
+        cp = self.format_mult(bonus["cpmult"])
+
+        bonus_data = (
+            f"{str(att):{self.col_attr_len}}"
+            f"{str(cha):{self.col_attr_len}}"
+            f"{str(_int):{self.col_attr_len}}"
+            f"{str(dex):{self.col_attr_len}}"
+            f"{str(luk):{self.col_attr_len}}"
+            f"{str(stats):{self.col_attr_len}}"
+            f"{str(exp):{self.col_attr_len}}"
+            f"{str(cp):{self.col_attr_len}}"
+        )
+        return bonus_data
+
+    def format_char_set_data(self, set_name, bonus):
+        parts = bonus["parts"]
+        name = "{} ({})".format(self.format_ansi(set_name, ANSITextColours.red), parts)
+        set_data = (
+            f"{str(name):{self.col_set_len}}"
+            f"{self.format_data(bonus)}"
+        )
+        return set_data
+
+    def format_set_bonus_data(self, bonus):
+        parts = bonus["parts"]
+        parts_pieces = "Pieces: {}".format(str(parts))
+        if self._character_set_count >= parts:
+            parts_pieces = self.format_ansi(parts_pieces, ANSITextColours.cyan)
+        else:
+            parts_pieces = self.format_ansi(parts_pieces, ANSITextColours.white)
+        bonus_data = (
+            f"{str(parts_pieces):{self.col_set_len}}"
+            f"{self.format_data(bonus)}"
+        )
+        return bonus_data
+
+    def build_char_set_data_block(self, entry):
+        data = []
+        for _set, bonus in entry.items():
+            data.append(self.format_char_set_data(_set, bonus))
+        data_str = "\n".join(data)
+
+        if len(data) == 0:
+            msg = self.wrap_md("No active set bonuses.")
+        else:
+            total = self.gather_total_amount(entry.values())
+            total_str = self.format_set_bonus_data(total).replace("Pieces: 100", "Total      ")
+            msg = self.wrap_ansi(data_str + "\n\n" + total_str)
+
+        return msg
+
+    def build_set_entry_block(self, entry):
+        data = []
+        for bonus in entry:
+            data.append(self.format_set_bonus_data(bonus))
+        data_str = "\n".join(data)
+        total = self.gather_total_amount(entry)
+        total_str = self.format_set_bonus_data(total).replace("Pieces: 100", "Total      ")
+        msg = self.wrap_ansi(data_str + "\n\n" + total_str)
+
+        owned = self.gather_total_amount(entry, self._character_set_count)
+        owned_str = self.format_set_bonus_data(owned).replace("Pieces:", "Owned: ")
+        msg += self.wrap_ansi(owned_str)
+
+        return msg
+
+    async def format_page(self, menu: menus.MenuPages, entry):
+        position = menu.current_page
+        msg = self.wrap_ansi(self.build_intro(menu))
+
+        if position == 0:
+            # first page is currently equipped items
+            msg += self.wrap_ansi(self.build_set_info_header())
+            msg += self.build_char_set_data_block(entry)
+        elif position == self.get_max_pages() - 1:
+            # last page is items in set
+            data = self.build_item_data(entry, exclude_cols=['owned', 'degrade'])
+            data_str = "\n".join(data)
+            msg += self.wrap_ansi(self.build_item_headers(exclude_cols=['QTY', 'DEG']))
+            msg += self.wrap_ansi(data_str)
+        else:
+            msg += self.wrap_ansi(self.build_set_info_header())
+            msg += self.build_set_entry_block(entry)
+
+        footer = f"Page {menu.current_page + 1}/{self.get_max_pages()}"
+        if menu.current_page > 0:
+            footer += "  - Equipped bonuses are on Page 1"
+        msg += self.wrap_ansi(footer)
+        return msg
 
     @staticmethod
-    def wrap_ansi(msg):
-        return "```ansi\n{}```".format(msg)
+    def format_mult(value):
+        mult = round((value - 1) * 100)
+        return f"+{mult}%" if mult > 0 else f"{mult}%"
 
     @staticmethod
-    def wrap_md(msg):
-        return "```md\n{}```".format(msg)
+    def gather_total_amount(bonuses, parts_limit=100):
+        total = {"parts": 0, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        for bonus in bonuses:
+            parts = bonus["parts"]
+            if parts_limit >= parts:
+                total["parts"] = parts_limit
+                total["att"] += bonus["att"]
+                total["cha"] += bonus["cha"]
+                total["int"] += bonus["int"]
+                total["dex"] += bonus["dex"]
+                total["luck"] += bonus["luck"]
+                total["statmult"] += (bonus["statmult"] - 1)
+                total["xpmult"] += (bonus["xpmult"] - 1)
+                total["cpmult"] += (bonus["cpmult"] - 1)
+        return total
 
 
 class StopButton(discord.ui.Button):
@@ -616,11 +772,14 @@ class BaseMenu(discord.ui.View):
         return self._source
 
     async def change_source(self, source: menus.PageSource, interaction: discord.Interaction):
+        await self.change_source_to_page(source, interaction, page=0)
+
+    async def change_source_to_page(self, source: menus.PageSource, interaction: discord.Interaction, page):
         self._source = source
-        self.current_page = 0
+        self.current_page = page
         if self.message is not None:
             await source._prepare_once()
-            await self.show_page(0, interaction)
+            await self.show_page(page, interaction)
 
     async def update(self):
         """
@@ -1018,7 +1177,10 @@ class InteractiveBackpackMenu(BaseMenu):
         self._equippable = False
         self._delta = False
         self._sold_count = 0
-        self._search_text = ""
+        self._search_name_text = ""
+        self._search_set_text = ""
+        self._viewing_set_name = ""
+        self._set_selections = None
         # remove useless buttons from parents
         self.remove_item(self.stop_button)
         self.remove_item(self.last_button)
@@ -1028,13 +1190,16 @@ class InteractiveBackpackMenu(BaseMenu):
 
     async def initial_state(self):
         self._c = await self._character_supplier(self.ctx)
+        await self.set_backpack_view_buttons()  # try to remove sets buttons, must be done before setting current_view
         self._current_view = "default"
         self._rarities = [i for i in Rarities]
         self._stats = self.initial_stats_filters()
         self._equippable = False
         self._delta = False
         self._sold_count = 0
-        self._search_text = ""
+        self._search_name_text = ""
+        self._search_set_text = ""
+        self._viewing_set_name = ""
 
     @staticmethod
     def initial_stats_filters():
@@ -1069,7 +1234,8 @@ class InteractiveBackpackMenu(BaseMenu):
         view_buttons = {
             "default": self.default_button,
             "can_equip": self.can_equip_button,
-            "loot": self.loot_button
+            "loot": self.loot_button,
+            "sets": self.sets_button
         }
         for button in view_buttons.values():
             button.disabled = False
@@ -1110,7 +1276,7 @@ class InteractiveBackpackMenu(BaseMenu):
 
         filter_selected = self.highlight_stats_filter_button(self.filter_group_1, ['att', 'cha', 'int', 'dex', 'luk'])
         filter_selected = self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl']) or filter_selected
-        if len(self._search_text) > 0 and not loot_view:
+        if (len(self._search_name_text) > 0 or len(self._search_set_text) > 0) and not loot_view:
             self.search_button.style = discord.ButtonStyle.green
             filter_selected = True
         else:
@@ -1133,14 +1299,66 @@ class InteractiveBackpackMenu(BaseMenu):
 
         self.update_contextual_button()
 
+    async def get_set_selections(self):
+        if self._set_selections is None:
+            sets = await self._c.get_set_count()
+            self._set_selections = InteractiveSetSelect(self, self.ctx, sets, row=3)
+        return self._set_selections
+
+    def remove_rarity_row(self):
+        self.remove_item(self.rare_filter)
+        self.remove_item(self.epic_filter)
+        self.remove_item(self.legendary_filter)
+        self.remove_item(self.ascended_filter)
+        self.remove_item(self.set_filter)
+
+    def remove_filters_row(self):
+        self.remove_item(self.search_button)
+        self.remove_item(self.filter_group_1)
+        self.remove_item(self.filter_group_2)
+        self.remove_item(self.clear_rarity)
+        self.remove_item(self.clear_filters)
+
+    def add_rarity_row(self):
+        self.add_item(self.rare_filter)
+        self.add_item(self.epic_filter)
+        self.add_item(self.legendary_filter)
+        self.add_item(self.ascended_filter)
+        self.add_item(self.set_filter)
+        
+    def add_filters_row(self):
+        self.add_item(self.search_button)
+        self.add_item(self.filter_group_1)
+        self.add_item(self.filter_group_2)
+        self.add_item(self.clear_rarity)
+        self.add_item(self.clear_filters)
+
+    async def set_backpack_view_buttons(self):
+        self.reset_contextual_state()
+        if self._current_view == "sets":
+            self.remove_item(await self.get_set_selections())
+            self.add_rarity_row()
+            self.add_filters_row()
+
+    async def set_setinfo_view_buttons(self):
+        self.reset_contextual_state()
+        self.remove_rarity_row()
+        self.remove_filters_row()
+        self.add_item(await self.get_set_selections())
+
     def update_contextual_button(self):
         label_space_pre = "\u200b "
         label_space_post = " \u200b"
         sell_all_label = str(label_space_pre * 7) + "Sell All" + str(label_space_post * 8)
         confirm_sell_label = str(label_space_pre * 6) + "Confirm Sell" + str(label_space_post * 6)
         auto_convert_label = str(label_space_pre * 5) + "Auto-Convert" + str(label_space_post * 4)
+        go_to_backpack_label = "Show In Backpack"
 
-        if self._current_view != "loot":
+        if self._current_view == "sets":
+            self.contextual_button.emoji = None
+            self.contextual_button.label = go_to_backpack_label
+            self.contextual_button.style = discord.ButtonStyle.green
+        elif self._current_view != "loot":
             if self._sold_count == SELL_CONFIRM_AMOUNT:
                 # sell all confirm
                 self.contextual_button.emoji = None
@@ -1181,7 +1399,12 @@ class InteractiveBackpackMenu(BaseMenu):
 
     @discord.ui.button(style=discord.ButtonStyle.grey, label="Contextual Button", row=0)
     async def contextual_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        if self._current_view != "loot":
+        if self._current_view == "sets":
+            set_name = self._viewing_set_name
+            await self.initial_state()
+            self._search_set_text = set_name
+            await self.do_change_source(interaction=interaction)
+        elif self._current_view != "loot":
             if self._sold_count == SELL_CONFIRM_AMOUNT:
                 # confirm action
                 backpack_items = await self.get_backpack_item_for_sell()
@@ -1208,27 +1431,35 @@ class InteractiveBackpackMenu(BaseMenu):
                        label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Backpack\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
                        row=1)
     async def default_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._current_view = "default"
         self._equippable = False
         self._delta = False
-        self.reset_contextual_state()
+        await self.set_backpack_view_buttons()
+        self._current_view = "default"
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.primary,
                        label="Loot",
                        row=1)
     async def loot_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        await self.set_backpack_view_buttons()
         self._current_view = "loot"
-        self.reset_contextual_state()
         await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.primary, label="\u200b \u200b Equipable \u200b \u200b \u200b", row=1)
     async def can_equip_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
-        self._current_view = "can_equip"
         self._equippable = True
         self._delta = True
-        self.reset_contextual_state()
+        await self.set_backpack_view_buttons()
+        self._current_view = "can_equip"
         await self.do_change_source(interaction)
+
+    @discord.ui.button(style=discord.ButtonStyle.primary,
+                       label="\u200b \u200b \u200b \u200b \u200b \u200b Sets \u200b \u200b \u200b \u200b \u200b",
+                       row=1)
+    async def sets_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        await self.set_setinfo_view_buttons()
+        self._current_view = "sets"
+        await self.do_change_source_to_sets(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.red,
                        label="\u200b \u200b \u200b \u200b Reset \u200b \u200b \u200b \u200b ", row=1)
@@ -1321,7 +1552,8 @@ class InteractiveBackpackMenu(BaseMenu):
                        label="Filters", row=3)
     async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._stats = self.initial_stats_filters()
-        self._search_text = ""
+        self._search_name_text = ""
+        self._search_set_text = ""
         self.reset_contextual_state()
         await self.do_change_source(interaction)
 
@@ -1363,26 +1595,28 @@ class InteractiveBackpackMenu(BaseMenu):
             return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities,
                                                                        equippable=self._equippable,
                                                                        delta=self._delta,
-                                                                       match=self._search_text,
+                                                                       match=self._search_name_text,
                                                                        strength=att_filter,
                                                                        charisma=cha_filter,
                                                                        intelligence=int_filter,
                                                                        dexterity=dex_filter,
                                                                        luck=luk_filter,
                                                                        degrade=deg_filter,
-                                                                       level=lvl_filter)
+                                                                       level=lvl_filter,
+                                                                       set=self._search_set_text)
         else:
             return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
                                                                  equippable=self._equippable,
                                                                  delta=self._delta,
-                                                                 match=self._search_text,
+                                                                 match=self._search_name_text,
                                                                  strength=att_filter,
                                                                  charisma=cha_filter,
                                                                  intelligence=int_filter,
                                                                  dexterity=dex_filter,
                                                                  luck=luk_filter,
                                                                  degrade=deg_filter,
-                                                                 level=lvl_filter)
+                                                                 level=lvl_filter,
+                                                                 set=self._search_set_text)
 
     async def do_change_source(self, interaction, items=None, contextual_msg=""):
         balance = self._c.bal
@@ -1429,6 +1663,66 @@ class InteractiveBackpackMenu(BaseMenu):
         self.reset_contextual_state()
         await self.do_change_source(interaction)
 
+    async def do_change_source_to_sets(self, interaction):
+        self._c.get_set_bonus()
+        source = PrettySetInfoSource(entries=[self._c.partial_sets])
+        await self.change_source(source=source, interaction=interaction)
+
+    @staticmethod
+    def get_slot_index(slot: Union[Slot, tuple, list]):
+        if isinstance(slot, str):
+            slot = Slot.from_list([slot])
+        elif isinstance(slot, (tuple, list)):
+            slot = Slot.from_list(slot)
+        return slot.order()
+
+    async def do_change_setinfo_source(self, interaction, set_name):
+        cog = self.ctx.bot.get_cog("Adventure")
+        set_bonuses = cog.SET_BONUSES
+        set_items = {key: value for key, value in cog.TR_GEAR_SET.items() if value["set"] == set_name}
+
+        d = {}
+        for k, v in set_items.items():
+            if len(v["slot"]) > 1:
+                d.update({v["slot"][0]: {k: v}})
+                d.update({v["slot"][1]: {k: v}})
+            else:
+                d.update({v["slot"][0]: {k: v}})
+
+        data = []
+        data_sorted = sorted(d.items(), key=self.get_slot_index)
+        two_handed_item = None
+        for (slot, d) in data_sorted:
+            item = Item.from_json(self.ctx, d)
+            item_level = self._c.equip_level(item)
+            cannot_equip = item_level > self._c.lvl
+            if item.slot == Slot.two_handed:
+                # two-handed items are in the list twice so must deal with them differently
+                if two_handed_item:
+                    # skip if we've already processed a two-handed item
+                    continue
+                two_handed_item = item
+                cannot_equip = item_level > self._c.lvl
+                i_data = {"name": item.name, "slot": item.slot, "att": item.att * 2, "cha": item.cha * 2, "int": item.int * 2,
+                          "dex": item.dex * 2, "luck": item.luck * 2, "owned": item.owned, "rarity": item.rarity, "set": item.set,
+                          "lvl": item_level, "cannot_equip": cannot_equip}
+            else:
+                i_data = {"name": item.name, "slot": item.slot, "att": item.att, "cha": item.cha, "int": item.int,
+                          "dex": item.dex, "luck": item.luck, "owned": item.owned, "rarity": item.rarity, "set": item.set,
+                          "lvl": item_level, "cannot_equip": cannot_equip}
+            data.append(i_data)
+
+        self._c.get_set_bonus()
+        entries = [self._c.partial_sets, set_bonuses.get(set_name), data]
+        sets = await self._c.get_set_count()
+        character_set_count = sets[set_name][1]
+        self._viewing_set_name = set_name
+        await self.change_source_to_page(source=PrettySetInfoSource(character_set_count=character_set_count,
+                                                                    set_name=set_name,
+                                                                    entries=entries),
+                                         interaction=interaction,
+                                         page=1)
+
     async def do_open_loot(self, interaction, rarity, number):
         c, opened_items, msg = await self._open_loot_callback(self.ctx, self._c, rarity, number)
         self._c = c
@@ -1445,8 +1739,12 @@ class InteractiveBackpackMenu(BaseMenu):
         await interaction.response.edit_message(**kwargs)
 
     @property
-    def search_text(self):
-        return self._search_text
+    def search_name_text(self):
+        return self._search_name_text
+
+    @property
+    def search_set_text(self):
+        return self._search_set_text
 
 
 class InteractiveBackpackFilterModal(discord.ui.Modal):
@@ -1495,18 +1793,21 @@ class InteractiveBackpackSearchModal(discord.ui.Modal):
         super().__init__(title='Backpack Search')
         self.ctx = ctx
         self.backpack_menu = backpack_menu
-        self.search_input = self.build_input(backpack_menu.search_text)
-        self.add_item(self.search_input)
+        self.search_name_input = self.build_input("Search by item name (case insensitive)", backpack_menu.search_name_text)
+        self.search_set_input = self.build_input("Search by set name (case sensitive)", backpack_menu.search_set_text)
+        self.add_item(self.search_name_input)
+        self.add_item(self.search_set_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        self.backpack_menu._search_text = self.search_input.value
+        self.backpack_menu._search_name_text = self.search_name_input.value
+        self.backpack_menu._search_set_text = self.search_set_input.value
         self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
     @staticmethod
-    def build_input(value):
+    def build_input(label, value):
         return discord.ui.TextInput(
-            label="Search by name (case insensitive)",
+            label=label,
             default=value,
             style=discord.TextStyle.short,
             max_length=100,
@@ -1542,3 +1843,24 @@ class InteractiveBackpackLootModal(discord.ui.Modal):
             min_length=0,
             required=True
         )
+
+
+class InteractiveSetSelect(discord.ui.Select):
+    def __init__(self, backpack_menu: InteractiveBackpackMenu, ctx: commands.Context, sets, row=0):
+        placeholder = "[Select a set]"
+        super().__init__(min_values=1, max_values=1, row=row, placeholder=placeholder)
+        self.backpack_menu = backpack_menu
+        self.ctx = ctx
+        self.build_options(sets)
+
+    async def callback(self, interaction: Interaction[ClientT]) -> Any:
+        await self.backpack_menu.do_change_setinfo_source(interaction=interaction, set_name=self.values[0])
+
+    def build_options(self, sets):
+        set_bonuses = self.ctx.bot.get_cog("Adventure").SET_BONUSES
+        for set_name in set_bonuses:
+            total, own = sets[set_name]
+            label = "{} ({}/{})".format(set_name, own, total)
+            if own == total:
+                label += " ✅"
+            self.add_option(label=label, value=set_name)

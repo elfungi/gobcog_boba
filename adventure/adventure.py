@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.6.6"
+    __version__ = "4.7.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -615,7 +615,7 @@ class Adventure(
                     except Exception as exc:
                         log.exception("Error with the new character sheet", exc_info=exc)
                         continue
-                    if c.hc is not HeroClasses.ranger and c.heroclass["ability"]:
+                    if c.heroclass["ability"]:
                         c.heroclass["ability"] = False
                     if c.last_currency_check + 600 < time.time() or c.bal > c.last_known_currency:
                         c.last_known_currency = await bank.get_balance(user)
@@ -1958,13 +1958,9 @@ class Adventure(
     def roll_pet_crit(c, roll, max_roll):
         new_roll = roll
         roll_perc = roll / max_roll
-        if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
+        if c.hc == HeroClasses.ranger and c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
             pet_crit = c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", 0)
             pet_crit = random.randint(pet_crit, 100)
-            if c.rebirths >= HC_VETERAN_RANK:
-                # veteran ranger can roll pet crit with advantage
-                pet_crit = max(pet_crit, random.randint(pet_crit, 100))
-
             if pet_crit == 100:
                 # pet full crit roll, player also gets full crit roll
                 new_roll = max_roll
@@ -1979,13 +1975,12 @@ class Adventure(
     @staticmethod
     def roll_pet_gold_loss(c, loss):
         pet_loss = 0
-        # bonus roll for rangers - 45% base chance to proc + 1% every 20 charisma
         roll = random.randint(1, 100)
         target_number = 45 + int(c.total_cha / 20)
         if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
             roll = 1  # pick 1 to guarantee bonus if pet allows it
-        if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
-            pet_loss = round(loss * (c.heroclass["pet"]["bonus"] - 1))
+        if roll < target_number and c.heroclass["pet"]:
+            pet_loss = round((loss * (c.heroclass["pet"]["bonus"] - 1)) / 2)
         return pet_loss
 
     async def handle_fight(self, guild_id, fumblelist, critlist, attack, magic):
@@ -2054,31 +2049,45 @@ class Adventure(
                     msg += _("{user} fumbled the attack.\n").format(user=bold(user.display_name))
                     fumblelist.append(user)
                     fumble_count += 1
-            elif roll_perc > 0.95 or c.hc is HeroClasses.berserker:
+            elif roll_perc > 0.95 or c.hc in [HeroClasses.berserker, HeroClasses.ranger]:
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, max(15, c.rebirths)) + rebirths
-                berserker_ability_used = False
+                ability_used = False
                 if roll_perc > 0.95:
                     msg += _("{user} landed a critical hit.\n").format(user=bold(user.display_name))
                     critlist.append(user)
                     crit_bonus = (random.randint(5, 20)) + (rebirths * 2)
-                    crit_str = f"{self.emojis.crit} {humanize_number(crit_bonus)}"
-                if c.hc is HeroClasses.berserker and c.heroclass["ability"]:
-                    berserker_ability_used = True
-                    base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
-                base_str = f"{self.emojis.crit}️ {humanize_number(base_bonus)}"
+                    crit_str = f"{self.emojis.crit}{humanize_number(crit_bonus)}"
 
-                if berserker_ability_used and c.rebirths >= HC_VETERAN_RANK:
-                    attack += int((roll + crit_bonus + att_value) / pdef) + int(base_bonus)
-                    base_str = f"{self.emojis.crit}{humanize_number(base_bonus)} PIERCE!"
+                if c.hc in [HeroClasses.berserker, HeroClasses.ranger] and c.heroclass["ability"]:
+                    ability_used = True
+                    base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
+
+                if c.hc == HeroClasses.berserker:
+                    base_str = f"{self.emojis.berserk}{humanize_number(base_bonus)}"
+                elif c.hc == HeroClasses.ranger:
+                    base_str = f"🏹{humanize_number(base_bonus)}"
+                else:
+                    base_str = f"{self.emojis.crit}{humanize_number(base_bonus)}"
+
+                if ability_used:
+                    if c.hc == HeroClasses.berserker and c.rebirths >= HC_VETERAN_RANK:
+                        attack += int((roll + crit_bonus + att_value) / pdef) + int(base_bonus)
+                        base_str = f"{self.emojis.berserk}{humanize_number(base_bonus)} PIERCE!"
+                    elif c.hc == HeroClasses.ranger:
+                        bonus_mod = 0.35 if c.rebirths >= HC_VETERAN_RANK else 0.25
+                        num_hits = random.randint(3, 8) if c.rebirths >= HC_VETERAN_RANK else random.randint(3, 6)
+                        dmg_bonus = round(base_bonus * bonus_mod)
+                        attack += int((roll + crit_bonus + (dmg_bonus * num_hits) + att_value) / pdef)
+                        base_str = f"🏹{humanize_number(dmg_bonus)} x {num_hits}"
                 else:
                     attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
-                bonus = base_str + crit_str
+                bonus = f"{crit_str} + {base_str}"
                 report += (
                     f"{bold(user.display_name)}: "
                     f"{self.emojis.dice}({roll}) + "
-                    f"{self.emojis.berserk}{bonus} + "
+                    f"{bonus} + "
                     f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
                 )
             else:
@@ -2108,11 +2117,10 @@ class Adventure(
                 mod = 45
 
             roll = max(random.randint((1 + mod), max_roll), 1)
-            roll = self.roll_pet_crit(c, roll, max_roll)
             roll_perc = roll / max_roll
 
             int_value = c.total_int
-            rebirths = c.rebirths * (3 if c.hc is HeroClasses.wizard else 2 if c.hc is HeroClasses.ranger else 1)
+            rebirths = c.rebirths * (3 if c.hc is HeroClasses.wizard else 1)
             if roll_perc < 0.10 or (roll + int_value) <= 0:
                 # fumble condition
                 msg += _("{}{} almost set themselves on fire.\n").format(failed_emoji, bold(user.display_name))
@@ -2230,11 +2238,6 @@ class Adventure(
                 continue
             handled_pray_list.append(user)
 
-            if c.rebirths >= HC_VETERAN_RANK:
-                len_fight_list = len_fight_list + 2 if len_fight_list > 0 else 0
-                len_talk_list = len_talk_list + 2 if len_talk_list > 0 else 0
-                len_magic_list = len_magic_list + 2 if len_magic_list > 0 else 0
-
             rebirths = c.rebirths * (2 if c.hc is HeroClasses.cleric else 1)
             if c.hc is HeroClasses.cleric:
                 crit_mod = max(max(c.dex, c.luck // 2) + (c.total_int // 20), 0)
@@ -2249,6 +2252,8 @@ class Adventure(
                     mod = 45
                 roll = max(random.randint((1 + mod), max_roll), 1)
                 roll_perc = roll / max_roll
+                vet_mod = 2 if c.rebirths >= HC_VETERAN_RANK else 0
+
                 if len_fight_list + len_magic_list + len_talk_list == 0:
                     msg += _("{} blessed like a madman but nobody was there to receive it.\n").format(
                         bold(user.display_name)
@@ -2258,11 +2263,11 @@ class Adventure(
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
                     if fight_list:
-                        pray_att_bonus = (5 * len_fight_list) - ((5 * len_fight_list) * max(rebirths * 0.01, 1.5))
+                        pray_att_bonus = (5 * (len_fight_list + vet_mod)) - ((5 * (len_fight_list + vet_mod)) * max(rebirths * 0.01, 1.5))
                     if talk_list:
-                        pray_diplo_bonus = (5 * len_talk_list) - ((5 * len_talk_list) * max(rebirths * 0.01, 1.5))
+                        pray_diplo_bonus = (5 * (len_talk_list + vet_mod)) - ((5 * (len_talk_list + vet_mod)) * max(rebirths * 0.01, 1.5))
                     if magic_list:
-                        pray_magic_bonus = (5 * len_magic_list) - ((5 * len_magic_list) * max(rebirths * 0.01, 1.5))
+                        pray_magic_bonus = (5 * (len_magic_list + vet_mod)) - ((5 * (len_magic_list + vet_mod)) * max(rebirths * 0.01, 1.5))
                     attack -= pray_att_bonus
                     diplomacy -= pray_diplo_bonus
                     magic -= pray_magic_bonus
@@ -2291,15 +2296,15 @@ class Adventure(
 
                     if fight_list:
                         pray_att_bonus = int(
-                            (mod * len_fight_list) + ((mod * len_fight_list) * max(rebirths * 0.05, 1.5))
+                            (mod * (len_fight_list + vet_mod)) + ((mod * (len_fight_list + vet_mod)) * max(rebirths * 0.05, 1.5))
                         )
                     if talk_list:
                         pray_diplo_bonus = int(
-                            (mod * len_talk_list) + ((mod * len_talk_list) * max(rebirths * 0.05, 1.5))
+                            (mod * (len_talk_list + vet_mod)) + ((mod * (len_talk_list + vet_mod)) * max(rebirths * 0.05, 1.5))
                         )
                     if magic_list:
                         pray_magic_bonus = int(
-                            (mod * len_magic_list) + ((mod * len_magic_list) * max(rebirths * 0.05, 1.5))
+                            (mod * (len_magic_list + vet_mod)) + ((mod * (len_magic_list + vet_mod)) * max(rebirths * 0.05, 1.5))
                         )
                     attack += pray_att_bonus
                     magic += pray_magic_bonus
@@ -2757,13 +2762,8 @@ class Adventure(
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
 
-            if c.hc is HeroClasses.bard:
-                # scale bard rewards based off their CHA stat instead of ATT & INT
-                userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c._cha / 10)), 0))
-                usercp = int(cp + max((cp * 0.1 * min(1000, (c._luck + c._cha) / 10)), 0))
-            else:
-                userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c._int / 10)), 0))
-                usercp = int(cp + max((cp * 0.1 * min(1000, (c._luck + c._att) / 10)), 0))
+            userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c.total_stats / 35)), 0))
+            usercp = int(cp + max((cp * 0.1 * min(1000, c.total_stats / 25)), 0))
 
             base_userxp = userxp
             base_usercp = usercp
@@ -2776,12 +2776,12 @@ class Adventure(
             newxp += userxp
             newcp += usercp
 
-            # bonus roll for rangers - 45% base chance to proc + 1% every 20 charisma
+            # bonus roll for pets - 45% base chance to proc + 1% every 20 charisma
             roll = random.randint(1, 100)
             target_number = 45 + int(c.total_cha / 20)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
                 roll = 1  # pick 1 to guarantee bonus if pet allows it
-            if roll < target_number and c.hc is HeroClasses.ranger and c.heroclass["pet"]:
+            if roll < target_number and c.heroclass["pet"]:
                 petxp = int(base_userxp * (c.heroclass["pet"]["bonus"] - 1))
                 petcp = int(base_usercp * (c.heroclass["pet"]["bonus"] - 1))
 

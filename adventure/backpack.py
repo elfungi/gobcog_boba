@@ -1020,7 +1020,7 @@ class BackPackCommands(AdventureMixin):
             log.exception("Error with the new character sheet", exc_info=exc)
         return None
 
-    @commands.command(name="ibackpack")
+    @commands.command(name="ibackpack", aliases=["ibp"])
     @commands.bot_has_permissions(add_reactions=True)
     async def commands_interactive_backpack(
             self,

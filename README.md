@@ -59,13 +59,11 @@ Preferred stat: INT
 Every 15 rebirths a Cleric recieves another +1 to their successful prayer damage multiplier.  
 * **Veteran Clerics** have an addition +2 count to each action list (e.g. Fight, Magic, Talk), provided at least 1 person has taken that action.
   
-**Rangers** can gain a special pet, which can find items and give reward bonuses.  
-Use the `[p]pet` command to try to catch a pet companion. Pet catching can be spammy, so `[p]pet` can be run in DMs.  
-`[p]pet forage` sends a pet to search for items, and `[p]pet free` will free your companion in case you wish to try your hand at capturing something that brings in more gold and loot from fights.  
-* Catch one of over 300 randomly-generated pets in search of the legendary beasts rumored to exist...  
-Preferred stat: CHA for charming pet companions and enemies, or ATK/INT for pure damage.  
-Higher CHA will increase pet bonus proc chance.
-* **Veteran Rangers**' pets will roll crit chance with advantage, increasing the probability of dealing crit damage.
+**Rangers** can fire a volley of arrows at the enemy, but not every hit will land.  
+Use the `[p]rain` command when attacking in an adventure.    
+* Rangers also have a special bond with their pets, enhancing the Ranger's abilities in combat.  
+Preferred stat: ATT 
+* **Veteran Rangers**'s rain will fire more arrows in their volley that will hit for more damage.
 
 **Wizards** have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...  
 Use the `[p]focus` command when attacking in an adventure.  
@@ -87,6 +85,11 @@ Use the `[p]insight` command in an adventure.
 Preferred stat: INT  
 * This prestige class unlocks at rebirth 20, so it does not have a Veteran rank.
 
+## Pet
+* A hero can gain a pet as a companion, which can find items and give reward bonuses. Raise your CHA stats to catch better pets!
+* Use the `[p]pet` command to try to catch a pet companion. Pet catching can be spammy, so `[p]pet` can be run in DMs.  
+`[p]pet forage` sends a pet to search for items, and `[p]pet free` will free your companion in case you wish to try your hand at capturing something that brings in more gold and loot from fights.
+* Catch one of over 300 randomly-generated pets in search of the legendary beasts rumored to exist...
 
 ## Basic Commands for Players
 
