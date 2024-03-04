@@ -297,10 +297,14 @@ class Character:
         self.backpack: dict = kwargs.pop("backpack")
         self.loadouts: dict = kwargs.pop("loadouts")
         self.heroclass: dict = kwargs.pop("heroclass")
+        if not self.heroclass.get("pet", None):
+            # need to re-init pet if sheet already saved without one
+            self.heroclass["pet"] = {}
         self.skill: dict = kwargs.pop("skill")
         self.bal: int = kwargs.pop("bal")
         self.user: discord.Member = kwargs.pop("user")
         self.sets = []
+        self.partial_sets = {}
         self.rebirths = kwargs.pop("rebirths", 0)
         self.last_known_currency = kwargs.get("last_known_currency")
         self.last_currency_check = kwargs.get("last_currency_check")
@@ -371,7 +375,7 @@ class Character:
         return _("fists")
 
     def remove_restrictions(self):
-        if self.hc is HeroClasses.ranger and self.heroclass["pet"]:
+        if self.heroclass["pet"]:
             requirements = (
                 self._ctx.bot.get_cog("Adventure")
                 .PETS.get(self.heroclass["pet"]["name"], {})
@@ -386,11 +390,13 @@ class Character:
                 return
 
             if self.heroclass["pet"]["cha"] > self.total_cha:
+                self.heroclass["soulbound_pet"] = self.heroclass["pet"]
                 self.heroclass["pet"] = {}
                 return
 
             if requirements:
                 if requirements.get("set") and requirements.get("set") not in self.sets:
+                    self.heroclass["soulbound_pet"] = self.heroclass["pet"]
                     self.heroclass["pet"] = {}
 
     def can_equip(self, item: Item):
@@ -510,6 +516,16 @@ class Character:
             set_upgrades = self._ctx.bot.get_cog("Adventure").SET_UPGRADES.get(_set, [])
 
             highest_required_parts = 0
+            set_info = {
+                "att": 0,
+                "cha": 0,
+                "int": 0,
+                "dex": 0,
+                "luck": 0,
+                "statmult": 1.0,
+                "xpmult": 1.0,
+                "cpmult": 1.0
+            }
             for bonus in set_bonuses:
                 required_parts = bonus.get("parts", 100)
                 if required_parts > parts:
@@ -518,13 +534,19 @@ class Character:
                     if key == "parts":
                         continue
                     if key not in ["cpmult", "xpmult", "statmult"]:
+                        set_info[key] += value
                         base[key] += value
                     elif key in ["cpmult", "xpmult", "statmult"]:
                         if value > 1:
+                            set_info[key] += value - 1
                             base[key] += value - 1
                         elif value >= 0:
+                            set_info[key] -= 1 - value
                             base[key] -= 1 - value
                 highest_required_parts = max(highest_required_parts, required_parts)
+            set_info["parts"] = highest_required_parts
+            if highest_required_parts > 0:
+                self.partial_sets[_set] = set_info
 
             set_items_owned = []
             for item_name in added.keys():
@@ -560,24 +582,22 @@ class Character:
         """Define str to be our default look for the character sheet :thinkies:"""
         next_lvl = int((self.lvl + 1) ** 3.5)
         max_level_xp = int((self.maxlevel + 1) ** 3.5)
-        hc = None
         if self.heroclass != {} and "name" in self.heroclass:
             hc = self.hc
             class_desc = self.hc.class_rank_name(self.rebirths) + "\n\n" + self.hc.desc()
-            if self.hc is HeroClasses.ranger:
-                if not self.heroclass["pet"]:
-                    class_desc += _("\n\n- Current pet: [None]")
-                elif self.heroclass["pet"]:
-                    if any(x in self.sets for x in ["The Supreme One", "Ainz Ooal Gown"]) and self.heroclass["pet"][
-                        "name"
-                    ] in [
-                        "Albedo",
-                        "Rubedo",
-                        "Guardians of Nazarick",
-                    ]:
-                        class_desc += _("\n\n- Current servant: [{}]").format(self.heroclass["pet"]["name"])
-                    else:
-                        class_desc += _("\n\n- Current pet: [{}]").format(self.heroclass["pet"]["name"])
+            if not self.heroclass["pet"]:
+                class_desc += _("\n\n- Current pet: [None]")
+            elif self.heroclass["pet"]:
+                if any(x in self.sets for x in ["The Supreme One", "Ainz Ooal Gown"]) and self.heroclass["pet"][
+                    "name"
+                ] in [
+                    "Albedo",
+                    "Rubedo",
+                    "Guardians of Nazarick",
+                ]:
+                    class_desc += _("\n\n- Current servant: [{}]").format(self.heroclass["pet"]["name"])
+                else:
+                    class_desc += _("\n\n- Current pet: [{}]").format(self.heroclass["pet"]["name"])
             class_desc = hc.class_colour.as_str(class_desc)
         else:
             class_desc = _("Hero.")
@@ -944,9 +964,7 @@ class Character:
                         continue
                 if slots and item_slots not in slots:
                     continue
-                if sets and item.rarity is not Rarities.set:
-                    continue
-                elif rarities and item.rarity not in rarities:
+                if rarities and item.rarity not in rarities:
                     continue
                 if sets and item.set not in sets:
                     continue
@@ -1208,7 +1226,8 @@ class Character:
             dexterity: MutableMapping[str, Any] = None,
             level: MutableMapping[str, Any] = None,
             degrade: MutableMapping[str, Any] = None,
-            match: Optional[str] = None
+            match: Optional[str] = None,
+            set: Optional[str] = None
     ) -> List[dict]:
         rarities = [i for i in Rarities] if rarities is None else rarities
         slots = [i for i in Slot] if slots is None else slots
@@ -1219,12 +1238,13 @@ class Character:
         dexterity = {} if dexterity is None else dexterity
         level = {} if level is None else level
         degrade = {} if degrade is None else degrade
+        sets = [] if not set else [set]
 
         bkpk = await self.get_sorted_backpack_arg_parse(
             self.backpack,
             slots=slots,
             rarities=rarities,
-            sets=[],
+            sets=sets,
             equippable=equippable,
             strength=strength,
             intelligence=intelligence,
@@ -1277,7 +1297,8 @@ class Character:
             dexterity: MutableMapping[str, Any] = None,
             level: MutableMapping[str, Any] = None,
             degrade: MutableMapping[str, Any] = None,
-            match: Optional[str] = None
+            match: Optional[str] = None,
+            set: Optional[str] = None
     ) -> List[Item]:
         rarities = [i for i in Rarities] if rarities is None else rarities
         slots = [i for i in Slot] if slots is None else slots
@@ -1288,12 +1309,13 @@ class Character:
         dexterity = {} if dexterity is None else dexterity
         level = {} if level is None else level
         degrade = {} if degrade is None else degrade
+        sets = [] if not set else [set]
 
         bkpk = await self.get_sorted_backpack_arg_parse(
             self.backpack,
             slots=slots,
             rarities=rarities,
-            sets=[],
+            sets=sets,
             equippable=equippable,
             strength=strength,
             intelligence=intelligence,
@@ -1512,6 +1534,7 @@ class Character:
             "ability": False,
             "desc": "Your basic adventuring hero.",
             "cooldown": 0,
+            "pet": {}
         }
         if "class" in data:
             # to move from old data to new data
@@ -1533,16 +1556,14 @@ class Character:
         if len(data["treasure"]) == 5:
             data["treasure"].insert(4, 0)
 
-        if heroclass["name"] == "Ranger":
-            theme = await config.theme()
-            extra_pets = await config.themes.all()
-            extra_pets = extra_pets.get(theme, {}).get("pets", {})
-            pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
-            if heroclass.get("pet"):
-                heroclass["pet"] = pet_list.get(heroclass["pet"]["name"], heroclass["pet"])
-            if heroclass.get("soulbound_pet"):
-                heroclass["soulbound_pet"] = pet_list.get(heroclass["soulbound_pet"]["name"], heroclass["soulbound_pet"])
-
+        theme = await config.theme()
+        extra_pets = await config.themes.all()
+        extra_pets = extra_pets.get(theme, {}).get("pets", {})
+        pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
+        if heroclass.get("pet"):
+            heroclass["pet"] = pet_list.get(heroclass["pet"]["name"], heroclass["pet"])
+        if heroclass.get("soulbound_pet"):
+            heroclass["soulbound_pet"] = pet_list.get(heroclass["soulbound_pet"]["name"], heroclass["soulbound_pet"])
 
         if "adventures" in data:
             adventures = data["adventures"]
@@ -1628,15 +1649,14 @@ class Character:
             for n, i in v.to_json().items():
                 backpack[n] = i
 
-        if self.hc is HeroClasses.ranger:
-            theme = await config.theme()
-            extra_pets = await config.themes.all()
-            extra_pets = extra_pets.get(theme, {}).get("pets", {})
-            pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
-            if self.heroclass.get("pet"):
-                self.heroclass["pet"] = pet_list.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
-            if self.heroclass.get("soulbound_pet"):
-                self.heroclass["soulbound_pet"] = pet_list.get(self.heroclass["soulbound_pet"]["name"], self.heroclass["soulbound_pet"])
+        theme = await config.theme()
+        extra_pets = await config.themes.all()
+        extra_pets = extra_pets.get(theme, {}).get("pets", {})
+        pet_list = {**ctx.bot.get_cog("Adventure").PETS, **extra_pets}
+        if self.heroclass.get("pet"):
+            self.heroclass["pet"] = pet_list.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
+        if self.heroclass.get("soulbound_pet"):
+            self.heroclass["soulbound_pet"] = pet_list.get(self.heroclass["soulbound_pet"]["name"], self.heroclass["soulbound_pet"])
 
         return {
             "adventures": self.adventures,
@@ -1723,7 +1743,7 @@ class Character:
         if self.rebirths > 0:
             tresure.normal += max(int(self.rebirths), 0)
 
-        if self.heroclass["name"] == 'ranger' and self.heroclass["pet"]:
+        if self.heroclass["pet"]:
             self.heroclass["soulbound_pet"] = self.heroclass["pet"]
 
         self.weekly_score.update({"rebirths": self.weekly_score.get("rebirths", 0) + 1})

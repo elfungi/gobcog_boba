@@ -516,7 +516,7 @@ class HeroClasses(Enum):
 
     @property
     def has_action(self):
-        return self not in [HeroClasses.hero, HeroClasses.tinkerer, HeroClasses.ranger]
+        return self not in [HeroClasses.hero, HeroClasses.tinkerer]
 
     @staticmethod
     def class_names():
@@ -576,8 +576,8 @@ class HeroClasses(Enum):
                 "Use the bless command when fighting in an adventure."
             ),
             "ranger": _(
-                "Rangers can gain a special pet, which can find items and give "
-                "reward bonuses.\nUse the pet command to see pet options."
+                "Rangers have special bonds with their pets, increasing their combat abilities.\n"
+                "Use the rain command to when fighting in an adventure."
             ),
             "bard": _(
                 "Bards can perform to aid their comrades in diplomacy.\n"
@@ -596,9 +596,8 @@ class HeroClasses(Enum):
             "ability": False,
             "desc": self.desc(),
             "cooldown": time.time(),
+            "pet": {}
         }
-        if self is HeroClasses.ranger:
-            ret["pet"] = {}
         return ret
 
 

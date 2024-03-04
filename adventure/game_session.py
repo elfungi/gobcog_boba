@@ -61,8 +61,8 @@ class BaseActionButton(discord.ui.Button):
         if c.do_not_disturb:
             choice += (
                 "\n\nYou will not join the next battle automatically."
-                "\nUse the `[p]auto on` command or toggle in ibackpack to enable auto mode."
-            )
+                "\nUse the `{prefix}auto on` command or toggle in `{prefix}ibackpack` to enable auto mode."
+            ).format(prefix=self.view.ctx.clean_prefix)
         await interaction.response.send_message(box(choice, lang="ansi"), ephemeral=True)
 
     async def do_callback(self, interaction: discord.Interaction, other_actions: List[str], action_list, action_str):
@@ -96,7 +96,7 @@ class AttackButton(BaseActionButton):
         super().__init__(label="Attack", action_type="fight", style=style, row=row)
         self.style = style
         self.emoji = "\N{DAGGER KNIFE}\N{VARIATION SELECTOR-16}"
-        self.label_name = "Attack {}"
+        self.label_name = "Attack {} \u200b"
 
     async def callback(self, interaction: discord.Interaction):
         await self.do_callback(interaction, ["magic", "talk", "pray", "auto"], self.view.fight,
@@ -112,7 +112,7 @@ class MagicButton(BaseActionButton):
         super().__init__(label="Magic", action_type="magic", style=style, row=row)
         self.style = style
         self.emoji = "\N{SPARKLES}"
-        self.label_name = "Magic {}"
+        self.label_name = "\u200b Magic {} \u200b \u200b"
 
     async def callback(self, interaction: discord.Interaction):
         await self.do_callback(interaction, ["fight", "talk", "pray", "auto"], self.view.magic,
@@ -193,11 +193,11 @@ class SpecialActionButton(discord.ui.Button):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Special Action", style=style, row=row)
+        super().__init__(label="Class Skill", style=style, row=row)
         self.style = style
         self.emoji = "\N{ATOM SYMBOL}\N{VARIATION SELECTOR-16}"
         self.action_type = "special_action"
-        self.label_name = "Special Action"
+        self.label_name = "Class Skill"
 
     async def send_cooldown(self, interaction: discord.Interaction, c: Character, cooldown_time: int):
         cooldown_time = int((c.heroclass["cooldown"]))
@@ -414,6 +414,29 @@ class SpecialActionButton(discord.ui.Button):
         else:
             await self.send_cooldown(interaction, c, cooldown_time)
 
+    async def send_ranger(self, interaction: discord.Interaction, c: Character):
+        user = interaction.user
+        if c.heroclass["ability"] is True:
+            await self.send_in_use(interaction)
+            return
+        cooldown_time = max(300, (1200 - max((c.luck + c.total_att) * 2, 0)))
+        if "cooldown" not in c.heroclass:
+            c.heroclass["cooldown"] = cooldown_time + 1
+        if c.heroclass["cooldown"] <= time.time():
+            c.heroclass["ability"] = True
+            c.heroclass["cooldown"] = time.time() + cooldown_time
+            await self.view.cog.config.user(user).set(await c.to_json(self.view.ctx, self.view.cog.config))
+            await smart_embed(
+                None,
+                _("🏹 {c} fires a volley of arrows into the sky... 🏹").format(
+                    c=escape(user.display_name)
+                ),
+                cog=self.view.cog,
+                interaction=interaction,
+            )
+        else:
+            await self.send_cooldown(interaction, c, cooldown_time)
+
     async def send_focus(self, interaction: discord.Interaction, c: Character):
         user = interaction.user
         if c.heroclass["ability"] is True:
@@ -499,6 +522,8 @@ class SpecialActionButton(discord.ui.Button):
                 await self.send_focus(interaction, c)
             if c.hc is HeroClasses.bard:
                 await self.send_music(interaction, c)
+            if c.hc is HeroClasses.ranger:
+                await self.send_ranger(interaction, c)
 
 
 class ActionListButton(discord.ui.Button):
@@ -507,7 +532,7 @@ class ActionListButton(discord.ui.Button):
             style: discord.ButtonStyle,
             row: Optional[int] = None,
     ):
-        super().__init__(label="Action List", style=style, row=row)
+        super().__init__(label="Action List", style=style, row=row, emoji="\N{WHITE QUESTION MARK ORNAMENT}")
         self.style = style
         self.action_type = "hit_list"
         self.label_name = "Action List"
@@ -527,24 +552,23 @@ class ActionListButton(discord.ui.Button):
 
         msg = "\n".join(filter(None, [attack_list_str, talk_list_str, magic_list_str, pray_list_str, auto_list_str]))
 
-        self_action = "not doing anything."
-        user = interaction.user
-        if user in self.view.fight:
-            self_action = "attacking"
-        elif user in self.view.talk:
-            self_action = "talking"
-        elif user in self.view.magic:
-            self_action = "casting"
-        elif user in self.view.pray:
-            self_action = "praying"
-        elif user in self.view.auto:
-            self_action = "being a mindless husk"
-        msg += "\n\nYou are currently {}.".format(self_action)
-
         if len(msg) == 0:
             await interaction.response.send_message(box('No one has taken any action! Lazy bums.', lang="ansi"),
                                                     ephemeral=True)
         else:
+            self_action = "not doing anything."
+            user = interaction.user
+            if user in self.view.fight:
+                self_action = "attacking"
+            elif user in self.view.talk:
+                self_action = "talking"
+            elif user in self.view.magic:
+                self_action = "casting"
+            elif user in self.view.pray:
+                self_action = "praying"
+            elif user in self.view.auto:
+                self_action = "being a mindless husk"
+            msg += "\n\nYou are currently {}.".format(self_action)
             await interaction.response.send_message(box(msg, lang="ansi"), ephemeral=True)
 
 
@@ -615,10 +639,10 @@ class GameSession(discord.ui.View):
         self.pray_button = PrayButton(discord.ButtonStyle.grey)
         self.auto_button = AutoButton(style=discord.ButtonStyle.grey, initial_len=len(self.auto))
         self.special_button = SpecialActionButton(discord.ButtonStyle.blurple)
-        self.action_list_button = ActionListButton(discord.ButtonStyle.green)
+        self.action_list_button = ActionListButton(discord.ButtonStyle.blurple)
         self.add_item(self.attack_button)
-        self.add_item(self.talk_button)
         self.add_item(self.magic_button)
+        self.add_item(self.talk_button)
         self.add_item(self.pray_button)
         self.add_item(self.auto_button)
         self.add_item(self.special_button)
