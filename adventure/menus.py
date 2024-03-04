@@ -410,13 +410,12 @@ class EconomySource(menus.ListPageSource):
 
 
 class BaseBackpackSource(menus.ListPageSource):
-    def __init__(self, entries: List[Dict], per_page=10, include_sets=False):
+    def __init__(self, entries: List[Dict], per_page=10):
         super().__init__(entries, per_page=per_page)
-        self.include_sets = include_sets
         self.col_name_len = 64
         self.col_slot_len = 8
         self.col_attr_len = 6
-        self.col_set_len = 28
+        self.col_rar_len = 12
 
     def is_paginating(self):
         return True
@@ -426,6 +425,7 @@ class BaseBackpackSource(menus.ListPageSource):
             exclude_cols = []
         header = (
             f"{self.format_ansi('Name'):{self.col_name_len}}"  # use ansi on this field to match spacing on table
+            f"{'Rarity':{self.col_rar_len}}"
             f"{'Slot':{self.col_slot_len}}"
         )
         for col in ['ATT', 'CHA', 'INT', 'DEX', 'LUK', 'QTY', 'DEG', 'LVL']:
@@ -434,8 +434,6 @@ class BaseBackpackSource(menus.ListPageSource):
                     header += f"{self.format_ansi(col):{self.col_attr_len + 8}}"
                 else:
                     header += f"{col:{self.col_attr_len}}"
-        if self.include_sets:
-            header += f"{'Set':{self.col_set_len}}"
         return header
 
     def build_item_data(self, entries: List[Dict], start_position=0, exclude_cols=None):
@@ -449,13 +447,14 @@ class BaseBackpackSource(menus.ListPageSource):
             rarity = item["rarity"]
             cannot_equip = item["cannot_equip"]
 
-            set_value = _set if rarity in [Rarities.set] else ""
-            ansi_name = rarity.as_ansi(name)
+            rarity_ansi = rarity.rarity_colour.value
+            ansi_name = self.format_ansi(name, rarity_ansi)
             i_data = (
                 f"{ansi_name:{self.col_name_len}}"
+                f"{rarity:{self.col_rar_len}}"
                 f"{slot:{self.col_slot_len}}"
             )
-            for col in ["att", "cha", "int", "dex", "luk", "owned", "degrade", "lvl"]:
+            for col in ["att", "cha", "int", "dex", "luck", "owned", "degrade", "lvl"]:
                 if col not in exclude_cols:
                     value = item.get(col, 0)
                     col_len = self.col_attr_len
@@ -467,9 +466,8 @@ class BaseBackpackSource(menus.ListPageSource):
                             value)
                         col_len += 8
                     i_data += f"{str(value):{col_len}}"
-
-            if self.include_sets:
-                i_data += f"{set_value:{self.col_set_len}}"
+            if _set and rarity == Rarities.set and 'set' not in exclude_cols:
+                data.append(_set)
             data.append(i_data)
         return data
 
@@ -492,8 +490,8 @@ class BaseBackpackSource(menus.ListPageSource):
 
 class PrettyBackpackSource(BaseBackpackSource):
     def __init__(self, entries: List[Dict], balance=0, backpack_size_cur=0, backpack_size_max=0,
-                 include_sets=True, body_msg="", contextual_msg=""):
-        super().__init__(entries, per_page=10, include_sets=include_sets)
+                 body_msg="", contextual_msg=""):
+        super().__init__(entries, per_page=10)
         self.balance = balance
         self.backpack_size_cur = backpack_size_cur
         self.backpack_size_max = backpack_size_max
@@ -535,6 +533,7 @@ class PrettySetInfoSource(BaseBackpackSource):
         super().__init__(entries, per_page=1)
         self._character_set_count = character_set_count
         self._set_name = set_name
+        self.col_name_len = 45  # override the name col len in parent class
         self.col_attr_len = 10
         self.col_set_len = 50
 
@@ -644,7 +643,7 @@ class PrettySetInfoSource(BaseBackpackSource):
             msg += self.build_char_set_data_block(entry)
         elif position == self.get_max_pages() - 1:
             # last page is items in set
-            data = self.build_item_data(entry, exclude_cols=['owned', 'degrade'])
+            data = self.build_item_data(entry, exclude_cols=['owned', 'degrade', 'set'])
             data_str = "\n".join(data)
             msg += self.wrap_ansi(self.build_item_headers(exclude_cols=['QTY', 'DEG']))
             msg += self.wrap_ansi(data_str)
@@ -1621,7 +1620,6 @@ class InteractiveBackpackMenu(BaseMenu):
     async def do_change_source(self, interaction, items=None, contextual_msg=""):
         balance = self._c.bal
         backpack_items = await self.get_backpack_items() if items is None else items
-        include_sets = Rarities.set in self._rarities or self._current_view == "loot"
         body_msg = ""
 
         if self._sold_count == SELL_CONFIRM_AMOUNT:
@@ -1651,7 +1649,6 @@ class InteractiveBackpackMenu(BaseMenu):
                                         balance=balance,
                                         backpack_size_cur=len(self._c.backpack),
                                         backpack_size_max=self._c.get_backpack_slots(),
-                                        include_sets=include_sets,
                                         body_msg=body_msg,
                                         contextual_msg=contextual_msg),
             interaction=interaction)

@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.1"
+    __version__ = "4.7.2"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -2427,7 +2427,7 @@ class Adventure(
             elif roll_perc > 0.95 or c.hc is HeroClasses.bard:
                 crit_str = ""
                 crit_bonus = 0
-                base_bonus = random.randint(5, 10) + rebirths
+                base_bonus = random.randint(5,  max(15, c.rebirths)) + rebirths
                 if roll_perc > 0.95:
                     msg += _("{} made a compelling argument.\n").format(bold(user.display_name))
                     critlist.append(user)
@@ -2436,9 +2436,9 @@ class Adventure(
 
                 dipl_bonus = 0
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
-                    base_bonus = (random.randint(1, min(10, c.rebirths)) + 5) * (rebirths // 2)
+                    base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
                     if c.rebirths >= HC_VETERAN_RANK:
-                        dipl_bonus = int(0.08 * len(talk_list) * base_bonus)
+                        dipl_bonus = int(0.12 * len(talk_list) * base_bonus)
                         msg += (_("{}'s music rallied the party! +{}{}\n")
                                 .format(bold(user.display_name), self.emojis.talk, humanize_number(dipl_bonus)))
 

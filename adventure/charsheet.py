@@ -283,6 +283,7 @@ class Character:
         self.exp: int = kwargs.pop("exp")
         self.lvl: int = kwargs.pop("lvl")
         self.treasure: Treasure = kwargs.pop("treasure", Treasure())
+        self.equipment = dict = kwargs.pop("equipment")
         self.head: Item = kwargs.pop("head")
         self.neck: Item = kwargs.pop("neck")
         self.chest: Item = kwargs.pop("chest")
@@ -446,8 +447,14 @@ class Character:
         set_names = {}
         returnable_items = []
         item_names = set()
-        async for item in AsyncIter(self.backpack, steps=100):
-            item = self.backpack[item]
+        equipped_items = self.equipment.values()
+        all_items = {}
+        all_items.update(self.backpack)
+        for item in equipped_items:
+            if item and item.name not in all_items.keys():
+                all_items[item.name] = item
+        async for item in AsyncIter(all_items, steps=100):
+            item = all_items[item]
             if item.rarity is not Rarities.set:
                 continue
             if item.name in item_names:
@@ -1615,6 +1622,7 @@ class Character:
         }
         for k, v in equipment.items():
             hero_data[k] = v
+        hero_data["equipment"] = equipment
         hero_data["last_skill_reset"] = data.get("last_skill_reset", 0)
         hero_data["last_known_currency"] = data.get("last_known_currency", 0)
         hero_data["last_currency_check"] = data.get("last_currency_check", 0)

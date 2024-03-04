@@ -196,7 +196,7 @@ class LeaderboardCommands(AdventureMixin):
 
         sorted_acc = sorted(
             raw_accounts_new.items(),
-            key=lambda x: (x[1].get("wins", 0), x[1].get("loses", 0)),
+            key=lambda x: (x[1].get("xp__earnings", 0), x[1].get("wins", 0)),
             reverse=True,
         )
         if positions is None:
