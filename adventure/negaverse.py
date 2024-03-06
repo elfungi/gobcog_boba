@@ -128,34 +128,13 @@ class Negaverse(AdventureMixin):
                     lock.release()
                     return await self._clear_react(nv_msg)
 
-            percentage_offered = (offering / bal) * 100
-            min_roll = int(percentage_offered / 10)
-            entry_roll = max(random.randint(max(1, min_roll), 20), 0) if admin_roll == -1 else admin_roll
-            if entry_roll == 1:
-                tax_mod = random.randint(4, 8)
-                tax = round(bal / tax_mod)
-                if tax > offering:
-                    loss = tax
-                else:
-                    loss = offering
-                offering_value += loss
-                loss_state = True
-                await bank.withdraw_credits(ctx.author, loss)
-                entry_msg = _(
-                    "A swirling void slowly grows and you watch in horror as it rushes to "
-                    "wash over you, leaving you cold... and your coin pouch significantly lighter. "
-                    "The portal to the negaverse remains closed."
-                )
-                lock.release()
-                return await nv_msg.edit(content=entry_msg, view=None)
-            else:
-                entry_msg = _(
-                    "Shadowy hands reach out to take your offering of {offering} {currency} from you and a swirling "
-                    "black void slowly grows and engulfs you, transporting you to the negaverse."
-                ).format(offering=humanize_number(offering), currency=currency_name)
-                await nv_msg.edit(content=entry_msg, view=None)
-                await self._clear_react(nv_msg)
-                await bank.withdraw_credits(ctx.author, offering)
+            entry_msg = _(
+                "Shadowy hands reach out to take your offering of {offering} {currency} from you and a swirling "
+                "black void slowly grows and engulfs you, transporting you to the negaverse."
+            ).format(offering=humanize_number(offering), currency=currency_name)
+            await nv_msg.edit(content=entry_msg, view=None)
+            await self._clear_react(nv_msg)
+            await bank.withdraw_credits(ctx.author, offering)
             if nega_set:
                 nega_member = nega
                 negachar = _("The Almighty Nega-{c}").format(c=nega_member.display_name)
@@ -176,7 +155,7 @@ class Negaverse(AdventureMixin):
                 lock.release()
                 ctx.command.reset_cooldown(ctx)
                 return
-            roll = random.randint(max(1, min_roll * 2), 50) if admin_roll == -1 else admin_roll
+            roll = random.randint(15, 50) if admin_roll == -1 else admin_roll
             if is_dev(nega_member):
                 roll = -2
             versus = random.randint(10, 60)

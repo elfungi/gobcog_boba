@@ -552,8 +552,6 @@ class Character:
                             base[key] -= 1 - value
                 highest_required_parts = max(highest_required_parts, required_parts)
             set_info["parts"] = highest_required_parts
-            if highest_required_parts > 0:
-                self.partial_sets[_set] = set_info
 
             set_items_owned = []
             for item_name in added.keys():
@@ -568,17 +566,24 @@ class Character:
                 if count >= highest_required_parts:
                     highest_upgrade = set_upgrade
 
-            if len(highest_upgrade.keys()) > 0:
-                for key, value in highest_upgrade.items():
-                    if key == "upgrades":
-                        continue
-                    if key not in ["cpmult", "xpmult", "statmult"]:
-                        base[key] += value * highest_required_parts
-                    elif key in ["cpmult", "xpmult", "statmult"]:
-                        if value > 1:
-                            base[key] += (value - 1) * highest_required_parts
-                        elif value >= 0:
-                            base[key] -= (1 - value) * highest_required_parts
+            if highest_upgrade:
+                for set_bonus in set_bonuses:
+                    for k, v in set_bonus.items():
+                        if k == "parts":
+                            continue
+                        elif "mult" in k:
+                            if highest_upgrade[k] > 1:
+                                set_info[k] += (highest_upgrade[k] - 1)
+                                base[k] += (highest_upgrade[k] - 1)
+                            else:
+                                set_info[k] -= (1 - highest_upgrade[k])
+                                base[k] -= (1 - highest_upgrade[k])
+                        else:
+                            set_info[k] += highest_upgrade[k]
+                            base[k] += highest_upgrade[k]
+
+            if highest_required_parts > 0:
+                self.partial_sets[_set] = set_info
 
         self.gear_set_bonus = base
         self.gear_set_bonus["cpmult"] = max(0, self.gear_set_bonus["cpmult"])

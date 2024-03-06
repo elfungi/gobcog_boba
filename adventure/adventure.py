@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.2"
+    __version__ = "4.7.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -955,7 +955,7 @@ class Adventure(
             ).format(
                 attr=session.attribute,
                 chall=session.challenge,
-                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
+                reactions=_("**Attack** - **Magic** - **Talk** - **Pray**"),
             )
             basilisk_text = _(
                 "but **a{attr} {chall}** stepped out looking around. \n\n"
@@ -965,7 +965,7 @@ class Adventure(
             ).format(
                 attr=session.attribute,
                 chall=session.challenge,
-                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
+                reactions=_("**Attack** - **Magic** - **Talk** - **Pray**"),
             )
             normal_text = _(
                 "but **a{attr} {chall}** "
@@ -977,7 +977,7 @@ class Adventure(
                 attr=session.attribute,
                 chall=session.challenge,
                 threat=random.choice(self.THREATEE),
-                reactions=_("**Attack** - **Talk** - **Magic** - **Pray**"),
+                reactions=_("**Attack** - **Magic** - **Talk** - **Pray**"),
             )
 
             embed = discord.Embed(colour=discord.Colour.blurple())
@@ -1976,7 +1976,7 @@ class Adventure(
     def roll_pet_gold_loss(c, loss):
         pet_loss = 0
         roll = random.randint(1, 100)
-        target_number = 45 + int(c.total_cha / 20)
+        target_number = 45
         if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
             roll = 1  # pick 1 to guarantee bonus if pet allows it
         if roll < target_number and c.heroclass["pet"]:
@@ -2438,7 +2438,7 @@ class Adventure(
                 if c.hc is HeroClasses.bard and c.heroclass["ability"]:
                     base_bonus = (random.randint(1, max(15, c.rebirths)) + 5) * (rebirths // 2)
                     if c.rebirths >= HC_VETERAN_RANK:
-                        dipl_bonus = int(0.08 * len(talk_list) * base_bonus)
+                        dipl_bonus = int(0.12 * len(talk_list) * base_bonus)
                         msg += (_("{}'s music rallied the party! +{}{}\n")
                                 .format(bold(user.display_name), self.emojis.talk, humanize_number(dipl_bonus)))
 
@@ -2776,9 +2776,9 @@ class Adventure(
             newxp += userxp
             newcp += usercp
 
-            # bonus roll for pets - 45% base chance to proc + 1% every 20 charisma
+            # bonus roll for pets - 45% base chance to proc
             roll = random.randint(1, 100)
-            target_number = 45 + int(c.total_cha / 20)
+            target_number = 45
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
                 roll = 1  # pick 1 to guarantee bonus if pet allows it
             if roll < target_number and c.heroclass["pet"]:

@@ -545,9 +545,11 @@ class PrettySetInfoSource(BaseBackpackSource):
             msg += ": {}".format(self.format_ansi(self._set_name, ANSITextColours.red))
         return msg
 
-    def build_set_info_header(self):
+    def build_set_info_header(self, name="Set Bonus", name_col_len=None):
+        if not name_col_len:
+            name_col_len = self.col_set_len
         header = (
-            f"{self.format_ansi('Set Bonus'):{self.col_set_len}}"  # use ansi on this field to match spacing on table
+            f"{self.format_ansi(name):{name_col_len}}"  # use ansi on this field to match spacing on table
             f"{'ATT':{self.col_attr_len}}"
             f"{'CHA':{self.col_attr_len}}"
             f"{'INT':{self.col_attr_len}}"
@@ -570,11 +572,11 @@ class PrettySetInfoSource(BaseBackpackSource):
         cp = self.format_mult(bonus["cpmult"])
 
         bonus_data = (
-            f"{str(att):{self.col_attr_len}}"
-            f"{str(cha):{self.col_attr_len}}"
-            f"{str(_int):{self.col_attr_len}}"
-            f"{str(dex):{self.col_attr_len}}"
-            f"{str(luk):{self.col_attr_len}}"
+            f"{self.format_stat(att):{self.col_attr_len}}"
+            f"{self.format_stat(cha):{self.col_attr_len}}"
+            f"{self.format_stat(_int):{self.col_attr_len}}"
+            f"{self.format_stat(dex):{self.col_attr_len}}"
+            f"{self.format_stat(luk):{self.col_attr_len}}"
             f"{str(stats):{self.col_attr_len}}"
             f"{str(exp):{self.col_attr_len}}"
             f"{str(cp):{self.col_attr_len}}"
@@ -590,10 +592,10 @@ class PrettySetInfoSource(BaseBackpackSource):
         )
         return set_data
 
-    def format_set_bonus_data(self, bonus):
+    def format_set_bonus_data(self, bonus, include_owned=True):
         parts = bonus["parts"]
         parts_pieces = "Pieces: {}".format(str(parts))
-        if self._character_set_count >= parts:
+        if include_owned and self._character_set_count >= parts:
             parts_pieces = self.format_ansi(parts_pieces, ANSITextColours.cyan)
         else:
             parts_pieces = self.format_ansi(parts_pieces, ANSITextColours.white)
@@ -618,18 +620,19 @@ class PrettySetInfoSource(BaseBackpackSource):
 
         return msg
 
-    def build_set_entry_block(self, entry):
+    def build_set_entry_block(self, entry, included_owned=True):
         data = []
         for bonus in entry:
-            data.append(self.format_set_bonus_data(bonus))
+            data.append(self.format_set_bonus_data(bonus, included_owned))
         data_str = "\n".join(data)
         total = self.gather_total_amount(entry)
         total_str = self.format_set_bonus_data(total).replace("Pieces: 100", "Total      ")
         msg = self.wrap_ansi(data_str + "\n\n" + total_str)
 
-        owned = self.gather_total_amount(entry, self._character_set_count)
-        owned_str = self.format_set_bonus_data(owned).replace("Pieces:", "Owned: ")
-        msg += self.wrap_ansi(owned_str)
+        if included_owned:
+            owned = self.gather_total_amount(entry, self._character_set_count)
+            owned_str = self.format_set_bonus_data(owned).replace("Pieces:", "Owned: ")
+            msg += self.wrap_ansi(owned_str)
 
         return msg
 
@@ -641,6 +644,10 @@ class PrettySetInfoSource(BaseBackpackSource):
             # first page is currently equipped items
             msg += self.wrap_ansi(self.build_set_info_header())
             msg += self.build_char_set_data_block(entry)
+        elif position == 1:
+            # 2nd page is set piece bonuses
+            msg += self.wrap_ansi(self.build_set_info_header())
+            msg += self.build_set_entry_block(entry)
         elif position == self.get_max_pages() - 1:
             # last page is items in set
             data = self.build_item_data(entry, exclude_cols=['owned', 'degrade', 'set'])
@@ -648,8 +655,15 @@ class PrettySetInfoSource(BaseBackpackSource):
             msg += self.wrap_ansi(self.build_item_headers(exclude_cols=['QTY', 'DEG']))
             msg += self.wrap_ansi(data_str)
         else:
-            msg += self.wrap_ansi(self.build_set_info_header())
-            msg += self.build_set_entry_block(entry)
+            # part upgrades
+            for k, v in entry.items():
+                # should only have 1 entry in the dict
+                name = (
+                    f"Set Bonus Upgrades - "
+                    f"{self.format_ansi('QTY ' + str(k), ANSITextColours.yellow)}"
+                )
+                msg += self.wrap_ansi(self.build_set_info_header(name=name, name_col_len=(self.col_set_len + 9)))
+                msg += self.build_set_entry_block(v, included_owned=False)
 
         footer = f"Page {menu.current_page + 1}/{self.get_max_pages()}"
         if menu.current_page > 0:
@@ -661,6 +675,13 @@ class PrettySetInfoSource(BaseBackpackSource):
     def format_mult(value):
         mult = round((value - 1) * 100)
         return f"+{mult}%" if mult > 0 else f"{mult}%"
+
+    @staticmethod
+    def format_stat(value):
+        if value > 0:
+            return "+{}".format(value)
+        else:
+            return str(value)
 
     @staticmethod
     def gather_total_amount(bonuses, parts_limit=100):
@@ -1673,9 +1694,8 @@ class InteractiveBackpackMenu(BaseMenu):
             slot = Slot.from_list(slot)
         return slot.order()
 
-    async def do_change_setinfo_source(self, interaction, set_name):
+    def build_set_items(self, set_name):
         cog = self.ctx.bot.get_cog("Adventure")
-        set_bonuses = cog.SET_BONUSES
         set_items = {key: value for key, value in cog.TR_GEAR_SET.items() if value["set"] == set_name}
 
         d = {}
@@ -1708,9 +1728,43 @@ class InteractiveBackpackMenu(BaseMenu):
                           "dex": item.dex, "luck": item.luck, "owned": item.owned, "rarity": item.rarity, "set": item.set,
                           "lvl": item_level, "cannot_equip": cannot_equip}
             data.append(i_data)
+        return data
 
+    @staticmethod
+    def build_set_bonus_upgrades(set_bonuses, set_upgrades):
+        result = []
+        for set_upgrade in set_upgrades:
+            upgrade_result = []
+            key = set_upgrade["upgrades"]
+            for set_bonus in set_bonuses:
+                entry = {}
+                for k, v in set_bonus.items():
+                    if k == "parts":
+                        attr = v
+                    elif "mult" in k:
+                        if set_upgrade[k] > 1:
+                            attr = v + (set_upgrade[k] - 1)
+                        else:
+                            attr = v - (1 - set_upgrade[k])
+                    else:
+                        attr = v + set_upgrade[k]
+                    entry[k] = attr
+                upgrade_result.append(entry)
+            result.append({key: upgrade_result})
+        return result
+
+    async def do_change_setinfo_source(self, interaction, set_name):
+        cog = self.ctx.bot.get_cog("Adventure")
+        set_bonuses = cog.SET_BONUSES
+        set_upgrades = cog.SET_UPGRADES
+
+        set_items = self.build_set_items(set_name)
         self._c.get_set_bonus()
-        entries = [self._c.partial_sets, set_bonuses.get(set_name), data]
+        set_upgrades_expanded = self.build_set_bonus_upgrades(set_bonuses.get(set_name), set_upgrades.get(set_name))
+        entries = [self._c.partial_sets, set_bonuses.get(set_name)]
+        entries += set_upgrades_expanded
+        entries.append(set_items)
+
         sets = await self._c.get_set_count()
         character_set_count = sets[set_name][1]
         self._viewing_set_name = set_name
