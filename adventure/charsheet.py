@@ -559,30 +559,29 @@ class Character:
                 if item.set == _set:
                     set_items_owned.append(item.owned)
 
-            highest_upgrade = {}
-            for set_upgrade in set_upgrades:
-                upgrade = set_upgrade.get("upgrades", 100)
-                count = len([i for j,i in enumerate(set_items_owned) if i >= upgrade])
-                if count >= highest_required_parts:
-                    highest_upgrade = set_upgrade
-
-            if highest_upgrade:
-                for set_bonus in set_bonuses:
-                    for k, v in set_bonus.items():
-                        if k == "parts":
-                            continue
-                        elif "mult" in k:
-                            if highest_upgrade[k] > 1:
-                                set_info[k] += (highest_upgrade[k] - 1)
-                                base[k] += (highest_upgrade[k] - 1)
-                            else:
-                                set_info[k] -= (1 - highest_upgrade[k])
-                                base[k] -= (1 - highest_upgrade[k])
-                        else:
-                            set_info[k] += highest_upgrade[k]
-                            base[k] += highest_upgrade[k]
-
             if highest_required_parts > 0:
+                highest_upgrade = {}
+                for set_upgrade in set_upgrades:
+                    upgrade = set_upgrade.get("upgrades", 100)
+                    count = len([i for j,i in enumerate(set_items_owned) if i >= upgrade])
+                    if count >= highest_required_parts:
+                        highest_upgrade = set_upgrade
+
+                if highest_upgrade:
+                    for set_bonus in set_bonuses:
+                        for k, v in set_bonus.items():
+                            if k == "parts":
+                                continue
+                            elif "mult" in k:
+                                if highest_upgrade[k] > 1:
+                                    set_info[k] += (highest_upgrade[k] - 1)
+                                    base[k] += (highest_upgrade[k] - 1)
+                                else:
+                                    set_info[k] -= (1 - highest_upgrade[k])
+                                    base[k] -= (1 - highest_upgrade[k])
+                            else:
+                                set_info[k] += highest_upgrade[k]
+                                base[k] += highest_upgrade[k]
                 self.partial_sets[_set] = set_info
 
         self.gear_set_bonus = base
