@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.4"
+    __version__ = "4.7.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -685,38 +685,7 @@ class Adventure(
         await ctx.bot.on_command_error(ctx, error, unhandled_by_cog=not handled)
 
     async def get_challenge(self, ctx: commands.Context, monsters):
-        try:
-            c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            choice = random.choice(list(monsters.keys()) * 3)
-            return choice
-        possible_monsters = []
-        stat_range = self._adv_results.get_stat_range(ctx)
-        async for (e, (m, stats)) in AsyncIter(monsters.items(), steps=100).enumerate(start=1):
-            if stat_range["max_stat"] > 0.0:
-                main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
-                appropriate_range = (stat_range["min_stat"] * 0.35) <= main_stat <= (stat_range["max_stat"] * 1.2)
-            else:
-                appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 5)
-            if not appropriate_range:
-                continue
-            if not stats["boss"] and not stats["miniboss"]:
-                count = 0
-                break_at = random.randint(1, 15)
-                while count < break_at:
-                    count += 1
-                    possible_monsters.append(m)
-                    if count == break_at:
-                        break
-            else:
-                possible_monsters.append(m)
-
-        if len(possible_monsters) == 0:
-            choice = random.choice(list(monsters.keys()) * 3)
-        else:
-            choice = random.choice(possible_monsters)
-        return choice
+        return random.choice(list(monsters.keys()))
 
     def _dynamic_monster_stats(self, ctx: commands.Context, choice: Monster) -> Monster:
         stat_range = self._adv_results.get_stat_range(ctx)
@@ -810,6 +779,28 @@ class Adventure(
         choice["pdef"] = new_pdef
         choice["mdef"] = new_mdef
         choice["cdef"] = new_cdef
+        return choice
+
+    @staticmethod
+    def fluctuate_stats(value):
+        return random.uniform(0.85, 1.15) * value
+
+    def _dynamic_monster_stats_simple(self, ctx: commands.Context, choice: Monster) -> Monster:
+        stat_range = self._adv_results.get_stat_range(ctx)
+        average_attack = stat_range["average_attack"]
+        average_talk = stat_range["average_talk"]
+
+        if average_attack == 0:
+            choice["hp"] = self.fluctuate_stats(choice["hp"])
+        else:
+            choice["hp"] = self.fluctuate_stats(average_attack)
+        if average_talk == 0:
+            choice["dipl"] = self.fluctuate_stats(choice["dipl"])
+        else:
+            choice["dipl"] = self.fluctuate_stats(average_talk)
+        choice["pdef"] = self.fluctuate_stats(choice["pdef"])
+        choice["mdef"] = self.fluctuate_stats(choice["mdef"])
+        choice["cdef"] = self.fluctuate_stats(choice.get("cdef", 1.0))
         return choice
 
     async def update_monster_roster(self, c: Optional[Character] = None) -> Tuple[Dict[str, Monster], float, bool]:
@@ -926,7 +917,7 @@ class Adventure(
             monster_stats=monster_stats if not no_monster else None,
             message=ctx.message,
             transcended=transcended if not no_monster else None,
-            monster_modified_stats=self._dynamic_monster_stats(ctx, monster_roster[challenge]),
+            monster_modified_stats=self._dynamic_monster_stats_simple(ctx, monster_roster[challenge]),
             easy_mode=easy_mode,
             no_monster=no_monster,
             auto=auto_users

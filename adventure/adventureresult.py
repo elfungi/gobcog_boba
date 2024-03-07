@@ -11,6 +11,8 @@ class StatRange(TypedDict):
     stat_type: str
     min_stat: float
     max_stat: float
+    average_talk: float
+    average_attack: float
     win_percent: float
 
 
@@ -107,12 +109,15 @@ class AdventureResults:
         stat_type: str = "hp"
         win_percent: float = 0.5
         if len(self._last_raids.get(ctx.guild.id, [])) == 0:
-            return StatRange(stat_type=stat_type, min_stat=min_stat, max_stat=max_stat, win_percent=win_percent)
+            return StatRange(stat_type=stat_type, min_stat=min_stat, max_stat=max_stat, win_percent=win_percent,
+                             average_talk=0, average_attack=0)
 
         # tally up stats for raids
         num_attack = 0
-        dmg_amount = 0
+        average_attack = 0
+        attack_amount = 0
         num_talk = 0
+        average_talk = 0
         talk_amount = 0
         num_wins = 0
         stat_type = "hp"
@@ -120,27 +125,28 @@ class AdventureResults:
         raids = self._last_raids.get(ctx.guild.id, [])
         raid_count = len(raids)
         if raid_count == 0:
-            win_percent = 0.5
+            win_percent = 0.0
         else:
             for raid in raids:
                 if raid["main_action"] == "attack":
                     num_attack += 1
-                    dmg_amount += raid["amount"]
+                    attack_amount += raid["amount"]
                     if raid["num_ppl"] == 1:
-                        dmg_amount += raid["amount"] * SOLO_RAID_SCALE
+                        attack_amount += raid["amount"] * SOLO_RAID_SCALE
                 else:
                     num_talk += 1
                     talk_amount += raid["amount"]
                     if raid["num_ppl"] == 1:
                         talk_amount += raid["amount"] * SOLO_RAID_SCALE
-                log.debug(f"raid dmg: {raid['amount']}")
                 if raid["success"]:
                     num_wins += 1
+            average_talk = talk_amount / num_talk if num_talk > 0 else 0
+            average_attack = attack_amount / num_attack if num_attack > 0 else 0
             if num_attack > 0:
-                avg_amount = dmg_amount / num_attack
-            if dmg_amount < talk_amount:
+                avg_amount = average_attack
+            if attack_amount < talk_amount:
                 stat_type = "dipl"
-                avg_amount = talk_amount / num_talk
+                avg_amount = average_talk
             win_percent = num_wins / raid_count
             min_stat = avg_amount * 0.5
             max_stat = avg_amount * 2
@@ -149,7 +155,8 @@ class AdventureResults:
             if win_percent < 0.5:
                 min_stat = avg_amount * win_percent
                 max_stat = avg_amount * 1.5
-        return StatRange(stat_type=stat_type, min_stat=min_stat, max_stat=max_stat, win_percent=win_percent)
+        return StatRange(stat_type=stat_type, min_stat=min_stat, max_stat=max_stat, win_percent=win_percent,
+                         average_talk=average_talk, average_attack=average_attack)
 
     def __str__(self):
         return str(self._last_raids)

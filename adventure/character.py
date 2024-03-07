@@ -487,8 +487,8 @@ class CharacterCommands(AdventureMixin):
 
         await ctx.invoke(self.backpack_equip, equip_item=item)
 
-    @commands.hybrid_command(name="auto")
-    async def auto_toggle(self, ctx: commands.Context, *, toggle: str = "on"):
+    @commands.hybrid_group(autohelp=False, fallback="auto")
+    async def auto(self, ctx: commands.Context, *, toggle: str = "on"):
         """This puts your character into a state where you will no longer automatically rejoin the battle.
         You will not leave the current adventure with this command.
 
@@ -515,3 +515,24 @@ class CharacterCommands(AdventureMixin):
                 )
             await smart_embed(ctx, _(msg).format(escape(ctx.author.display_name)))
             await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+
+    @auto.command(name="mode")
+    async def auto_mode(self, ctx: commands.Context, mode: str):
+        """Set your auto mode preference: "attack", "magic", "talk".
+        Note that clerics will always perform "pray", and non-clerics cannot "pray" in auto.
+        """
+        await ctx.defer()
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(ctx, self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                return
+            mode = mode.lower()
+            if mode not in ["attack", "magic", "talk"]:
+                await smart_embed(ctx, _("{}, please specify one of 'attack', 'magic', or 'talk'").format(escape(ctx.author.display_name)))
+            else:
+                c.auto_pref = mode
+                msg = "{}, your auto mode is now set to {}."
+                await smart_embed(ctx, _(msg).format(escape(ctx.author.display_name), mode))
+                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))

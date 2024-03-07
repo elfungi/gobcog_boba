@@ -698,6 +698,8 @@ class PrettySetInfoSource(BaseBackpackSource):
                 total["statmult"] += (bonus["statmult"] - 1)
                 total["xpmult"] += (bonus["xpmult"] - 1)
                 total["cpmult"] += (bonus["cpmult"] - 1)
+        if total["parts"] == 0 and parts_limit != 100:
+            total["parts"] = parts_limit
         return total
 
 
@@ -1198,6 +1200,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._search_name_text = ""
+        self._search_slots_text = ""
         self._search_set_text = ""
         self._viewing_set_name = ""
         self._set_selections = None
@@ -1218,6 +1221,7 @@ class InteractiveBackpackMenu(BaseMenu):
         self._delta = False
         self._sold_count = 0
         self._search_name_text = ""
+        self._search_slots_text = ""
         self._search_set_text = ""
         self._viewing_set_name = ""
 
@@ -1296,7 +1300,7 @@ class InteractiveBackpackMenu(BaseMenu):
 
         filter_selected = self.highlight_stats_filter_button(self.filter_group_1, ['att', 'cha', 'int', 'dex', 'luk'])
         filter_selected = self.highlight_stats_filter_button(self.filter_group_2, ['deg', 'lvl']) or filter_selected
-        if (len(self._search_name_text) > 0 or len(self._search_set_text) > 0) and not loot_view:
+        if (len(self._search_name_text) > 0 or len(self._search_set_text) > 0 or len(self._search_slots_text) > 0) and not loot_view:
             self.search_button.style = discord.ButtonStyle.green
             filter_selected = True
         else:
@@ -1445,7 +1449,10 @@ class InteractiveBackpackMenu(BaseMenu):
     @discord.ui.button(style=discord.ButtonStyle.red, label="Auto Toggle", row=0)
     async def auto_toggle(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._c = await self._auto_toggle_callback(self.ctx)
-        await self.do_change_source(interaction)
+        if self._current_view == "sets":
+            await self.do_change_source_to_sets(interaction)
+        else:
+            await self.do_change_source(interaction)
 
     @discord.ui.button(style=discord.ButtonStyle.primary,
                        label="\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b Backpack\u200b \u200b \u200b \u200b \u200b \u200b \u200b \u200b",
@@ -1573,6 +1580,7 @@ class InteractiveBackpackMenu(BaseMenu):
     async def clear_filters(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         self._stats = self.initial_stats_filters()
         self._search_name_text = ""
+        self._search_slots_text = ""
         self._search_set_text = ""
         self.reset_contextual_state()
         await self.do_change_source(interaction)
@@ -1603,6 +1611,25 @@ class InteractiveBackpackMenu(BaseMenu):
         else:
             self._stats[attr] = None
 
+    def get_slots_filter(self):
+        if self._search_slots_text:
+            arr = self._search_slots_text
+            arr = arr.lower()
+            arr = arr.replace("2-handed", "two_handed")
+            arr = arr.replace("two-handed", "two_handed")
+            arr = arr.replace("2-hand", "two_handed")
+            result = set()
+            for s in arr.split(","):
+                try:
+                    slot = Slot.get_from_name(s.strip())
+                    result.add(slot)
+                except KeyError:
+                    # ignore slots that were entered incorrectly
+                    continue
+            return list(result)
+        else:
+            return None
+
     async def get_backpack_items(self, for_sell=False):
         att_filter = self.get_filter_attr('att')
         cha_filter = self.get_filter_attr('cha')
@@ -1611,8 +1638,10 @@ class InteractiveBackpackMenu(BaseMenu):
         luk_filter = self.get_filter_attr('luk')
         deg_filter = self.get_filter_attr('deg')
         lvl_filter = self.get_filter_attr('lvl')
+
         if for_sell:
             return await self._c.get_argparse_backpack_no_format_items(rarities=self._rarities,
+                                                                       slots=self.get_slots_filter(),
                                                                        equippable=self._equippable,
                                                                        delta=self._delta,
                                                                        match=self._search_name_text,
@@ -1626,6 +1655,7 @@ class InteractiveBackpackMenu(BaseMenu):
                                                                        set=self._search_set_text)
         else:
             return await self._c.get_argparse_backpack_no_format(rarities=self._rarities,
+                                                                 slots=self.get_slots_filter(),
                                                                  equippable=self._equippable,
                                                                  delta=self._delta,
                                                                  match=self._search_name_text,
@@ -1794,6 +1824,10 @@ class InteractiveBackpackMenu(BaseMenu):
         return self._search_name_text
 
     @property
+    def search_slots_text(self):
+        return self._search_slots_text
+
+    @property
     def search_set_text(self):
         return self._search_set_text
 
@@ -1844,22 +1878,35 @@ class InteractiveBackpackSearchModal(discord.ui.Modal):
         super().__init__(title='Backpack Search')
         self.ctx = ctx
         self.backpack_menu = backpack_menu
-        self.search_name_input = self.build_input("Search by item name (case insensitive)", backpack_menu.search_name_text)
-        self.search_set_input = self.build_input("Search by set name (case sensitive)", backpack_menu.search_set_text)
+        self.search_name_input = self.build_input(
+            label="Search by item name (case insensitive)",
+            value=backpack_menu.search_name_text,
+            placeholder="e.g. strange")
+        self.search_slots_input = self.build_input(
+            label="Search by slots names (case insensitive)",
+            value=backpack_menu.search_slots_text,
+            placeholder="e.g. belt,neck,2-hand")
+        self.search_set_input = self.build_input(
+            label="Search by exact set name (case sensitive)",
+            value=backpack_menu.search_set_text,
+            placeholder="e.g. The King of Mages")
         self.add_item(self.search_name_input)
+        self.add_item(self.search_slots_input)
         self.add_item(self.search_set_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         self.backpack_menu._search_name_text = self.search_name_input.value
+        self.backpack_menu._search_slots_text = self.search_slots_input.value
         self.backpack_menu._search_set_text = self.search_set_input.value
         self.backpack_menu.reset_contextual_state()
         await self.backpack_menu.do_change_source(interaction)
 
     @staticmethod
-    def build_input(label, value):
+    def build_input(label, value, placeholder=""):
         return discord.ui.TextInput(
             label=label,
             default=value,
+            placeholder=placeholder,
             style=discord.TextStyle.short,
             max_length=100,
             min_length=0,
