@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.6"
+    __version__ = "4.7.7"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -690,8 +690,8 @@ class Adventure(
         return random.choice(list(monsters.keys()))
 
     @staticmethod
-    def fluctuate_stats(bottom, value):
-        return random.uniform(bottom + 0.4, bottom + 0.6) * value
+    def fluctuate_stats(value, bottom):
+        return random.uniform(bottom, bottom + 0.4) * value
 
     def _dynamic_monster_stats_simple(self, ctx: commands.Context, choice: Monster, monster_stats) -> Monster:
         stat_range = self._adv_results.get_stat_range(ctx)
@@ -724,16 +724,20 @@ class Adventure(
                 and whether or not it is transcended.
         """
         transcended_chance = random.randint(0, 10)
+        normal_monsters_list = random.sample(list(self.MONSTERS.items()), 60)
+        normal_monsters = {}
+        for name, monster in normal_monsters_list:
+            normal_monsters[name] = monster
         theme = await self.config.theme()
         extra_monsters = await self.config.themes.all()
         extra_monsters = extra_monsters.get(theme, {}).get("monsters", {})
-        monsters = {**self.MONSTERS, **self.AS_MONSTERS, **extra_monsters}
+        monsters = {**normal_monsters, **self.AS_MONSTERS, **extra_monsters}
         transcended = False
         # set our default return values first
         monster_stats = 1.0
 
-        if transcended_chance == 5:
-            monster_stats = random.uniform(1.0, 1.2)
+        if transcended_chance > 8:
+            monster_stats = random.uniform(1, 1.3)
             transcended = True
         return monsters, monster_stats, transcended
 
@@ -1079,161 +1083,109 @@ class Adventure(
             treasure = random.choice(available_loot)
             return treasure
         treasure = Treasure()  # empty treasure container
-        if session.easy_mode:
-            if (slain or persuaded) and not failed:
-                roll = random.randint(1, 10)
-                monster_amount = hp + dipl if slain and persuaded else hp if slain else dipl
-                if session.transcended:
-                    if session.boss and not session.no_monster:
-                        available_loot = [
-                            Treasure(epic=1, legendary=5, ascended=2, _set=1),
-                            Treasure(ascended=1, _set=1),
-                        ]
-                    else:
-                        available_loot = [
-                            Treasure(epic=1, legendary=5, ascended=1, _set=1),
-                            Treasure(epic=1, legendary=3, _set=1),
-                            Treasure(epic=1, legendary=1, ascended=1, _set=1),
-                            Treasure(_set=1),
-                        ]
+        if (slain or persuaded) and not failed:
+            roll = random.randint(1, 10)
+            monster_amount = hp + dipl if slain and persuaded else hp if slain else dipl
+            if session.transcended:
+                if session.boss and not session.no_monster:
+                    available_loot = [
+                        Treasure(epic=1, legendary=5, ascended=2, _set=3),
+                        Treasure(epic=2, legendary=6, ascended=1, _set=3),
+                        Treasure(epic=3, legendary=7, ascended=1, _set=3),
+                    ]
+                else:
+                    available_loot = [
+                        Treasure(epic=1, legendary=5, ascended=1, _set=1),
+                        Treasure(epic=2, legendary=3, _set=1),
+                        Treasure(epic=3, legendary=1, ascended=1, _set=1),
+                        Treasure(epic=1, legendary=5, _set=1),
+                    ]
+                treasure = random.choice(available_loot)
+            elif session.boss:
+                available_loot = [
+                    Treasure(epic=3, legendary=5, _set=1),
+                    Treasure(epic=1, legendary=2, ascended=1, _set=1),
+                    Treasure(legendary=3, ascended=2, _set=1),
+                ]
+                treasure = random.choice(available_loot)
+            elif session.miniboss:
+                available_loot = [
+                    Treasure(epic=4, ascended=2),
+                    Treasure(epic=2, legendary=1, ascended=2),
+                    Treasure(epic=3, legendary=2),
+                    Treasure(rare=6, legendary=3, ascended=2),
+                ]
+                treasure = random.choice(available_loot)
+            elif monster_amount >= 8000:
+                available_loot = [
+                    Treasure(epic=3, legendary=3, ascended=1),
+                    Treasure(epic=1, legendary=5),
+                    Treasure(epic=1, legendary=2, ascended=1),
+                ]
+                treasure = random.choice(available_loot)
+            elif monster_amount >= 6000:
+                available_loot = [
+                    Treasure(epic=3, legendary=3),
+                    Treasure(epic=1, legendary=1, ascended=1),
+                    Treasure(legendary=2, ascended=1),
+                ]
+                if roll <= 9:
                     treasure = random.choice(available_loot)
-                elif session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
-                    # available_loot = [[0, 0, 3, 1, 0, 0], [0, 0, 1, 2, 1, 0], [0, 0, 0, 3, 2, 0]]
-                    available_loot = [
-                        Treasure(epic=3, legendary=1),
-                        Treasure(epic=1, legendary=2, ascended=1),
-                        Treasure(legendary=3, ascended=2),
-                    ]
+            elif monster_amount >= 5000:
+                available_loot = [
+                    Treasure(epic=3, legendary=3),
+                    Treasure(epic=1, legendary=1, ascended=1),
+                    Treasure(legendary=2, ascended=1),
+                ]
+                if roll <= 7:
                     treasure = random.choice(available_loot)
-                elif session.miniboss:  # rewards 50:50 rare:normal chest for killing something like the basilisk
-                    # available_loot = [[1, 1, 1, 0, 0, 0], [0, 0, 1, 1, 1, 0], [0, 0, 2, 2, 0, 0], [0, 1, 0, 2, 1, 0]]
-                    available_loot = [
-                        Treasure(normal=1, rare=1, epic=1),
-                        Treasure(epic=1, legendary=1, ascended=1),
-                        Treasure(epic=2, legendary=2),
-                        Treasure(rare=1, legendary=2, ascended=1),
-                    ]
+            elif monster_amount >= 3000:
+                available_loot = [
+                    Treasure(epic=3, legendary=1),
+                    Treasure(epic=1, legendary=2),
+                    Treasure(legendary=1, ascended=1),
+                ]
+                if roll <= 7:
                     treasure = random.choice(available_loot)
-                elif monster_amount >= 700:  # super hard stuff
-                    # available_loot = [[0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 1, 0]]
-                    available_loot = [
-                        Treasure(epic=1),
-                        Treasure(rare=1),
-                        Treasure(legendary=1, ascended=1),
-                    ]
-                    if roll <= 7:
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 500:  # rewards 50:50 rare:epic chest for killing hard stuff.
-                    # available_loot = [[0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0]]
-                    available_loot = [
-                        Treasure(epic=1),
-                        Treasure(rare=1),
-                        Treasure(rare=1, epic=1),
-                    ]
-                    if roll <= 5:
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 300:  # rewards 50:50 rare:normal chest for killing hardish stuff
-                    # available_loot = [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0]]
-                    available_loot = [
-                        Treasure(normal=1),
-                        Treasure(rare=1),
-                        Treasure(normal=1, rare=1),
-                    ]
-                    if roll <= 2:
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 80:  # small chance of a normal chest on killing stuff that's not terribly weak
-                    if roll == 1:
-                        # treasure = [1, 0, 0, 0, 0, 0]
-                        treasure = Treasure(normal=1)
-
-                if session.boss:  # always rewards at least an epic chest.
-                    # roll for legendary chest
-                    roll = random.randint(1, 100)
-                    if roll <= 10:
-                        treasure.ascended += 1
-                    elif roll <= 20:
-                        treasure.legendary += 1
-                    else:
-                        treasure.epic += 1
-                if crit_bonus:
-                    treasure.normal += 1
-                if not treasure:
-                    treasure = Treasure()
-        else:
-            if (slain or persuaded) and not failed:
-                roll = random.randint(1, 10)
-                monster_amount = hp + dipl if slain and persuaded else hp if slain else dipl
-                if session.transcended:
-                    if session.boss and not session.no_monster:
-                        # available_loot = [[0, 0, 1, 5, 4, 2], [0, 0, 3, 4, 5, 2],]
-                        available_loot = [
-                            Treasure(epic=1, legendary=5, ascended=4, _set=2),
-                            Treasure(epic=3, legendary=4, ascended=5, _set=2),
-                        ]
-                    else:
-                        # available_loot = [[0, 0, 1, 4, 2, 1], [0, 0, 1, 1, 2, 1],]
-                        available_loot = [
-                            Treasure(epic=1, legendary=4, ascended=2, _set=1),
-                            Treasure(epic=1, legendary=1, ascended=2, _set=1),
-                        ]
+            elif monster_amount >= 1500:
+                available_loot = [
+                    Treasure(rare=1, epic=3),
+                    Treasure(rare=5, epic=1),
+                    Treasure(epic=2, legendary=1),
+                ]
+                if roll <= 7:
                     treasure = random.choice(available_loot)
-                elif session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
-                    # available_loot = [[0, 0, 1, 2, 1, 0], [0, 0, 0, 3, 2, 0]]
-                    available_loot = [
-                        Treasure(epic=1, legendary=2, ascended=1),
-                        Treasure(legendary=3, ascended=2),
-                    ]
+            elif monster_amount >= 700:
+                available_loot = [
+                    Treasure(epic=1),
+                    Treasure(rare=1),
+                    Treasure(legendary=1),
+                ]
+                if roll <= 7:
                     treasure = random.choice(available_loot)
-                elif session.miniboss:  # rewards 50:50 rare:normal chest for killing something like the basilisk
-                    # treasure = random.choice([[0, 0, 2, 2, 3, 0], [0, 1, 0, 2, 2, 0]])
-                    available_loot = [
-                        Treasure(epic=2, legendary=2, ascended=3),
-                        Treasure(rare=1, legendary=2, ascended=2),
-                    ]
+            elif monster_amount >= 500:
+                available_loot = [
+                    Treasure(epic=1),
+                    Treasure(rare=1),
+                    Treasure(rare=1, epic=1),
+                ]
+                if roll <= 5:
                     treasure = random.choice(available_loot)
-                elif monster_amount >= 700:  # super hard stuff
-                    available_loot = [
-                        Treasure(legendary=2, ascended=2),
-                        Treasure(rare=1, epic=2, legendary=1),
-                    ]
-                    if roll <= 7:
-                        # treasure = random.choice([[0, 0, 0, 2, 2, 0], [0, 1, 2, 1, 0, 0]])
-
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 500:  # rewards 50:50 rare:epic chest for killing hard stuff.
-                    # available_loot = [[0, 0, 2, 0, 0, 0], [0, 1, 2, 1, 0, 0]]
-                    available_loot = [
-                        Treasure(epic=2),
-                        Treasure(rare=1, epic=2, legendary=1),
-                    ]
-                    if roll <= 5:
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 300:  # rewards 50:50 rare:normal chest for killing hardish stuff
-                    available_loot = [[0, 2, 0, 0, 0, 0], [1, 2, 1, 0, 0, 0]]
-                    available_loot = [
-                        Treasure(rare=2),
-                        Treasure(normal=1, rare=2, epic=1),
-                    ]
-                    if roll <= 2:
-                        treasure = random.choice(available_loot)
-                elif monster_amount >= 80:  # small chance of a normal chest on killing stuff that's not terribly weak
-                    if roll == 1:
-                        treasure = Treasure(normal=3)
-                        # treasure = [3, 0, 0, 0, 0, 0]
-
-                if session.boss:  # always rewards at least an epic chest.
-                    # roll for legendary chest
-                    roll = random.randint(1, 100)
-                    if roll <= 30:
-                        treasure.ascended += 1
-                    elif roll <= 50:
-                        treasure.legendary += 1
-                    else:
-                        treasure.epic += 1
-                if crit_bonus:
-                    treasure.normal += 1
-                if not treasure:
-                    treasure = Treasure()
+            elif monster_amount >= 300:
+                available_loot = [
+                    Treasure(normal=1),
+                    Treasure(rare=1),
+                    Treasure(normal=1, rare=1),
+                ]
+                if roll <= 2:
+                    treasure = random.choice(available_loot)
+            elif monster_amount >= 80:
+                if roll == 1:
+                    treasure = Treasure(normal=1)
+            if crit_bonus:
+                treasure.epic += 1
+            if not treasure:
+                treasure = Treasure()
         return treasure
 
     async def _result(self, ctx: commands.Context, message: discord.Message):

@@ -136,7 +136,7 @@ class AdventureMixin(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def update_monster_roster(self, ctx: commands.Context):
+    async def update_monster_roster(self):
         raise NotImplementedError()
 
     @abstractmethod
