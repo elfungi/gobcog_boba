@@ -281,8 +281,8 @@ class SpecialActionButton(discord.ui.Button):
                     hp = session.monster_modified_stats["hp"]
                     diplo = session.monster_modified_stats["dipl"]
                     if roll == 1:
-                        hp = int(hp * self.ATTRIBS[session.attribute][0] * session.monster_stats)
-                        dipl = int(diplo * self.ATTRIBS[session.attribute][1] * session.monster_stats)
+                        hp = int(hp * self.ATTRIBS[session.attribute][0])
+                        dipl = int(diplo * self.ATTRIBS[session.attribute][1])
                         msg += _(
                             "This monster is **a{attr} {challenge}** ({hp_symbol} {hp}/{dipl_symbol} {dipl}){trans}.\n"
                         ).format(
@@ -298,8 +298,8 @@ class SpecialActionButton(discord.ui.Button):
                         )
                         self.view.exposed = True
                     elif roll >= 0.95:
-                        hp = hp * self.ATTRIBS[session.attribute][0] * session.monster_stats
-                        dipl = diplo * self.ATTRIBS[session.attribute][1] * session.monster_stats
+                        hp = hp * self.ATTRIBS[session.attribute][0]
+                        dipl = diplo * self.ATTRIBS[session.attribute][1]
                         msg += _(
                             "This monster is **a{attr} {challenge}** ({hp_symbol} {hp}/{dipl_symbol} {dipl}).\n"
                         ).format(
@@ -312,7 +312,7 @@ class SpecialActionButton(discord.ui.Button):
                         )
                         self.view.exposed = True
                     elif roll >= 0.90:
-                        hp = hp * self.ATTRIBS[session.attribute][0] * session.monster_stats
+                        hp = hp * self.ATTRIBS[session.attribute][0]
                         msg += _("This monster is **a{attr} {challenge}** ({hp_symbol} {hp}).\n").format(
                             challenge=session.challenge,
                             attr=session.attribute,
@@ -615,7 +615,6 @@ class GameSession(discord.ui.View):
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
         self.monsters: Mapping[str, Mapping] = kwargs.pop("monsters", [])
-        self.monster_stats: int = kwargs.pop("monster_stats", 1)
         self.monster_modified_stats = kwargs.pop("monster_modified_stats", self.monster)
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0

@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.5"
+    __version__ = "4.7.6"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -561,6 +561,8 @@ class Adventure(
         guild_settings = await self.config.guild(ctx.guild).all()
         cooldown = guild_settings["cooldown"]
         cooldown_time = guild_settings["cooldown_timer_manual"]
+        # cooldown = 1
+        # cooldown_time = 0
 
         if cooldown + cooldown_time > time.time() and ctx.author.id not in DEV_LIST:
             cooldown_time = int(cooldown + cooldown_time)
@@ -687,132 +689,33 @@ class Adventure(
     async def get_challenge(self, ctx: commands.Context, monsters):
         return random.choice(list(monsters.keys()))
 
-    def _dynamic_monster_stats(self, ctx: commands.Context, choice: Monster) -> Monster:
-        stat_range = self._adv_results.get_stat_range(ctx)
-        win_percentage = stat_range.get("win_percent", 0.5)
-        choice["cdef"] = choice.get("cdef", 1.0)
-        if win_percentage >= 0.90:
-            monster_hp_min = int(choice["hp"] * 2)
-            monster_hp_max = int(choice["hp"] * 3)
-            monster_diplo_min = int(choice["dipl"] * 2)
-            monster_diplo_max = int(choice["dipl"] * 3)
-            percent_pdef = random.randrange(25, 30) / 100
-            monster_pdef = choice["pdef"] * percent_pdef
-            percent_mdef = random.randrange(25, 30) / 100
-            monster_mdef = choice["mdef"] * percent_mdef
-            percent_cdef = random.randrange(25, 30) / 100
-            monster_cdef = choice["cdef"] * percent_cdef
-        elif win_percentage >= 0.75:
-            monster_hp_min = int(choice["hp"] * 1.5)
-            monster_hp_max = int(choice["hp"] * 2)
-            monster_diplo_min = int(choice["dipl"] * 1.5)
-            monster_diplo_max = int(choice["dipl"] * 2)
-            percent_pdef = random.randrange(15, 25) / 100
-            monster_pdef = choice["pdef"] * percent_pdef
-            percent_mdef = random.randrange(15, 25) / 100
-            monster_mdef = choice["mdef"] * percent_mdef
-            percent_cdef = random.randrange(15, 25) / 100
-            monster_cdef = choice["cdef"] * percent_cdef
-        elif win_percentage >= 0.50:
-            monster_hp_min = int(choice["hp"])
-            monster_hp_max = int(choice["hp"] * 1.5)
-            monster_diplo_min = int(choice["dipl"])
-            monster_diplo_max = int(choice["dipl"] * 1.5)
-            percent_pdef = random.randrange(1, 15) / 100
-            monster_pdef = choice["pdef"] * percent_pdef
-            percent_mdef = random.randrange(1, 15) / 100
-            monster_mdef = choice["mdef"] * percent_mdef
-            percent_cdef = random.randrange(1, 15) / 100
-            monster_cdef = choice["cdef"] * percent_cdef
-        elif win_percentage >= 0.35:
-            monster_hp_min = int(choice["hp"] * 0.9)
-            monster_hp_max = int(choice["hp"])
-            monster_diplo_min = int(choice["dipl"] * 0.9)
-            monster_diplo_max = int(choice["dipl"])
-            percent_pdef = random.randrange(1, 15) / 100
-            monster_pdef = choice["pdef"] * percent_pdef * -1
-            percent_mdef = random.randrange(1, 15) / 100
-            monster_mdef = choice["mdef"] * percent_mdef * -1
-            percent_cdef = random.randrange(1, 15) / 100
-            monster_cdef = choice["cdef"] * percent_cdef * -1
-        elif win_percentage >= 0.15:
-            monster_hp_min = int(choice["hp"] * 0.8)
-            monster_hp_max = int(choice["hp"] * 0.9)
-            monster_diplo_min = int(choice["dipl"] * 0.8)
-            monster_diplo_max = int(choice["dipl"] * 0.9)
-            percent_pdef = random.randrange(15, 25) / 100
-            monster_pdef = choice["pdef"] * percent_pdef * -1
-            percent_mdef = random.randrange(15, 25) / 100
-            monster_mdef = choice["mdef"] * percent_mdef * -1
-            percent_cdef = random.randrange(15, 25) / 100
-            monster_cdef = choice["cdef"] * percent_cdef * -1
-        else:
-            monster_hp_min = int(choice["hp"] * 0.6)
-            monster_hp_max = int(choice["hp"] * 0.8)
-            monster_diplo_min = int(choice["dipl"] * 0.6)
-            monster_diplo_max = int(choice["dipl"] * 0.8)
-            percent_pdef = random.randrange(25, 30) / 100
-            monster_pdef = choice["pdef"] * percent_pdef * -1
-            percent_mdef = random.randrange(25, 30) / 100
-            monster_mdef = choice["mdef"] * percent_mdef * -1
-            percent_cdef = random.randrange(25, 30) / 100
-            monster_cdef = choice["cdef"] * percent_cdef * -1
-
-        if monster_hp_min < monster_hp_max:
-            new_hp = random.randrange(monster_hp_min, monster_hp_max)
-        elif monster_hp_max < monster_hp_min:
-            new_hp = random.randrange(monster_hp_max, monster_hp_min)
-        else:
-            new_hp = max(monster_hp_max, monster_hp_min)
-        if monster_diplo_min < monster_diplo_max:
-            new_diplo = random.randrange(monster_diplo_min, monster_diplo_max)
-        elif monster_diplo_max < monster_diplo_min:
-            new_diplo = random.randrange(monster_diplo_max, monster_diplo_min)
-        else:
-            new_diplo = max(monster_diplo_max, monster_diplo_min)
-
-        new_pdef = choice["pdef"] + monster_pdef
-        new_mdef = choice["mdef"] + monster_mdef
-        new_cdef = choice["cdef"] + monster_cdef
-        choice["hp"] = new_hp
-        choice["dipl"] = new_diplo
-        choice["pdef"] = new_pdef
-        choice["mdef"] = new_mdef
-        choice["cdef"] = new_cdef
-        return choice
-
     @staticmethod
-    def fluctuate_stats(value):
-        return random.uniform(0.85, 1.15) * value
+    def fluctuate_stats(bottom, value):
+        return random.uniform(bottom + 0.4, bottom + 0.6) * value
 
-    def _dynamic_monster_stats_simple(self, ctx: commands.Context, choice: Monster) -> Monster:
+    def _dynamic_monster_stats_simple(self, ctx: commands.Context, choice: Monster, monster_stats) -> Monster:
         stat_range = self._adv_results.get_stat_range(ctx)
         average_attack = stat_range["average_attack"]
         average_talk = stat_range["average_talk"]
+        win_percent = stat_range["win_percent"]
 
         if average_attack == 0:
-            choice["hp"] = self.fluctuate_stats(choice["hp"])
+            choice["hp"] = self.fluctuate_stats(choice["hp"] * monster_stats, win_percent)
         else:
-            choice["hp"] = self.fluctuate_stats(average_attack)
+            choice["hp"] = self.fluctuate_stats(average_attack * monster_stats, win_percent)
         if average_talk == 0:
-            choice["dipl"] = self.fluctuate_stats(choice["dipl"])
+            choice["dipl"] = self.fluctuate_stats(choice["dipl"] * monster_stats, win_percent)
         else:
-            choice["dipl"] = self.fluctuate_stats(average_talk)
-        choice["pdef"] = self.fluctuate_stats(choice["pdef"])
-        choice["mdef"] = self.fluctuate_stats(choice["mdef"])
-        choice["cdef"] = self.fluctuate_stats(choice.get("cdef", 1.0))
+            choice["dipl"] = self.fluctuate_stats(average_talk * monster_stats, win_percent)
+        choice["pdef"] = self.fluctuate_stats(choice["pdef"], win_percent)
+        choice["mdef"] = self.fluctuate_stats(choice["mdef"], win_percent)
+        choice["cdef"] = self.fluctuate_stats(choice.get("cdef", 1.0), win_percent)
         return choice
 
-    async def update_monster_roster(self, c: Optional[Character] = None) -> Tuple[Dict[str, Monster], float, bool]:
+    async def update_monster_roster(self) -> Tuple[Dict[str, Monster], float, bool]:
         """
         Gets the current list of available monsters, their stats, and whether
         or not to spawn a transcended.
-
-        Parameters
-        ----------
-            c: Optional[Character]
-                The character used to determine actual stats of the monster.
-                If this is `None` then just basic stats will apply.
 
         Returns
         -------
@@ -824,22 +727,14 @@ class Adventure(
         theme = await self.config.theme()
         extra_monsters = await self.config.themes.all()
         extra_monsters = extra_monsters.get(theme, {}).get("monsters", {})
-        monster_stats = 1
         monsters = {**self.MONSTERS, **self.AS_MONSTERS, **extra_monsters}
         transcended = False
         # set our default return values first
         monster_stats = 1.0
-        if transcended_chance == 5:
-            monster_stats = 2.0
 
-        # if this is a normal adventure start e.g. not a bot owner
-        # picking the adventure, then we can randomly adjust the stats
-        if c is not None:
-            if transcended_chance == 5:
-                monster_stats = 2 + max((c.rebirths // 10) - 1, 0)
-                transcended = True
-            elif c.rebirths >= 10:
-                monster_stats = 1 + max((c.rebirths // 10) - 1, 0) / 2
+        if transcended_chance == 5:
+            monster_stats = random.uniform(1.0, 1.2)
+            transcended = True
         return monsters, monster_stats, transcended
 
     async def _simple(self, ctx: commands.Context, adventure_msg, challenge: str = None, attribute: str = None):
@@ -855,7 +750,7 @@ class Adventure(
             else:
                 easy_mode = True
 
-        monster_roster, monster_stats, transcended = await self.update_monster_roster(c)
+        monster_roster, monster_stats, transcended = await self.update_monster_roster()
         if not challenge or challenge not in monster_roster:
             challenge = await self.get_challenge(ctx, monster_roster)
 
@@ -914,10 +809,9 @@ class Adventure(
             timer=timer,
             monster=monster_roster[challenge] if not no_monster else None,
             monsters=monster_roster if not no_monster else None,
-            monster_stats=monster_stats if not no_monster else None,
             message=ctx.message,
             transcended=transcended if not no_monster else None,
-            monster_modified_stats=self._dynamic_monster_stats_simple(ctx, monster_roster[challenge]),
+            monster_modified_stats=self._dynamic_monster_stats_simple(ctx, monster_roster[challenge], monster_stats),
             easy_mode=easy_mode,
             no_monster=no_monster,
             auto=auto_users
@@ -1461,10 +1355,10 @@ class Adventure(
         result_msg = pray_msg + talk_msg + fight_msg
         challenge_attrib = session.attribute
         hp = max(
-            int(session.monster_modified_stats["hp"] * self.ATTRIBS[challenge_attrib][0] * session.monster_stats), 1
+            int(session.monster_modified_stats["hp"] * self.ATTRIBS[challenge_attrib][0]), 1
         )
         dipl = max(
-            int(session.monster_modified_stats["dipl"] * self.ATTRIBS[challenge_attrib][1] * session.monster_stats), 1
+            int(session.monster_modified_stats["dipl"] * self.ATTRIBS[challenge_attrib][1]), 1
         )
 
         dmg_dealt = int(attack + magic)
@@ -1613,7 +1507,7 @@ class Adventure(
             result_msg += _("The {miniboss}'s {special} was countered, but they still managed to kill you.").format(
                 miniboss=bold(miniboss), special=special
             )
-        amount = 1 * session.monster_stats
+        amount = 1
         amount *= (hp + dipl) if slain and persuaded else hp if slain else dipl
         amount += int(amount * (0.25 * people))
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -2753,8 +2647,8 @@ class Adventure(
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
 
-            userxp = int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c.total_stats / 50)), 0))
-            usercp = int(cp + max((cp * 0.1 * min(1000, c.total_stats / 35)), 0))
+            userxp = round(0.75 * int(xp + (xp * 0.5 * c.rebirths) + max((xp * 0.1 * min(250, c.total_stats / 50)), 0)))
+            usercp = round(0.75 * int(cp + max((cp * 0.1 * min(1000, c.total_stats / 35)), 0)))
 
             base_userxp = userxp
             base_usercp = usercp

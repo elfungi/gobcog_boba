@@ -1,4 +1,5 @@
 import logging
+import statistics
 from typing import Dict, List, MutableMapping, TypedDict
 
 import discord
@@ -116,9 +117,11 @@ class AdventureResults:
         num_attack = 0
         average_attack = 0
         attack_amount = 0
+        attack_amounts = []
         num_talk = 0
         average_talk = 0
         talk_amount = 0
+        talk_amounts = []
         num_wins = 0
         stat_type = "hp"
         avg_amount = 0
@@ -131,17 +134,19 @@ class AdventureResults:
                 if raid["main_action"] == "attack":
                     num_attack += 1
                     attack_amount += raid["amount"]
+                    attack_amounts.append(raid["amount"])
                     if raid["num_ppl"] == 1:
                         attack_amount += raid["amount"] * SOLO_RAID_SCALE
                 else:
                     num_talk += 1
                     talk_amount += raid["amount"]
+                    talk_amounts.append(raid["amount"])
                     if raid["num_ppl"] == 1:
                         talk_amount += raid["amount"] * SOLO_RAID_SCALE
                 if raid["success"]:
                     num_wins += 1
-            average_talk = talk_amount / num_talk if num_talk > 0 else 0
-            average_attack = attack_amount / num_attack if num_attack > 0 else 0
+            average_talk = statistics.median(talk_amounts) if num_talk > 0 else 0
+            average_attack = statistics.median(attack_amounts) if num_attack > 0 else 0
             if num_attack > 0:
                 avg_amount = average_attack
             if attack_amount < talk_amount:
