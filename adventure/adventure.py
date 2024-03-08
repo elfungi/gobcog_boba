@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.7"
+    __version__ = "4.7.8"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -156,6 +156,7 @@ class Adventure(
         self._current_traders = {}
         self._curent_trader_stock = {}
         self._sessions: MutableMapping[int, GameSession] = {}
+        self._session_waits: MutableMapping[int: bool] = {}
         self._react_messaged = []
         self.tasks = {}
         self.locks: MutableMapping[int, asyncio.Lock] = {}
@@ -530,6 +531,13 @@ class Adventure(
         You play by reacting with the offered emojis.
         """
         await ctx.defer()
+        if ctx.guild.id and self._session_waits and self._session_waits[ctx.guild.id] is True:
+            return await smart_embed(
+                ctx,
+                _(
+                    f"The next adventure is already queued up! Check your supplies and get ready!"
+                ),
+            )
         if ctx.guild.id in self._sessions and self._sessions[ctx.guild.id].finished is False:
             adventure_obj = self._sessions[ctx.guild.id]
             link = adventure_obj.message.jump_url
@@ -558,18 +566,18 @@ class Adventure(
                     req=250, name=currency_name, extra=extra
                 ),
             )
+        self._session_waits[ctx.guild.id] = True
         guild_settings = await self.config.guild(ctx.guild).all()
         cooldown = guild_settings["cooldown"]
         cooldown_time = guild_settings["cooldown_timer_manual"]
-        # cooldown = 1
-        # cooldown_time = 0
 
         if cooldown + cooldown_time > time.time() and ctx.author.id not in DEV_LIST:
-            cooldown_time = int(cooldown + cooldown_time)
-            return await smart_embed(
+            next_start_time = int(cooldown + cooldown_time + 3)  # add 3s buffer for processing time
+            await smart_embed(
                 ctx,
-                _("No heroes are ready to depart in an adventure, try again <t:{}:R>.").format(cooldown_time),
+                _("Alright {}, the next adventure will start in about <t:{}:R>!").format(ctx.author.display_name, next_start_time),
             )
+            await asyncio.sleep(int(cooldown_time))
 
         if challenge and not (is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
             # Only let the bot owner specify a specific challenge
@@ -577,6 +585,7 @@ class Adventure(
 
         adventure_msg = _("You feel adventurous, {}?").format(bold(ctx.author.display_name))
         try:
+            self._session_waits[ctx.guild.id] = False
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
             await self.config.guild(ctx.guild).cooldown.set(time.time())
             if ctx.guild.id in self._sessions:
@@ -732,6 +741,22 @@ class Adventure(
         extra_monsters = await self.config.themes.all()
         extra_monsters = extra_monsters.get(theme, {}).get("monsters", {})
         monsters = {**normal_monsters, **self.AS_MONSTERS, **extra_monsters}
+
+        # shuffle the monsters to guarantee randomness, then prune the list so that only ~10% are bosses
+        monster_names = list(monsters.keys())
+        random.shuffle(monster_names)
+        target_boss_percent = round(0.10 * len(monster_names))
+        boss_count = 0
+        result = {}
+        for name in monster_names:
+            monster = monsters[name]
+            if monster["boss"]:
+                if boss_count >= target_boss_percent:
+                    continue
+                boss_count += 1
+            result[name] = monster
+        # bosses = [m for _i, m in enumerate(result.values()) if m["boss"]]
+        # print(len(result), len(bosses), (len(bosses) / len(result) * 100))
         transcended = False
         # set our default return values first
         monster_stats = 1.0
@@ -739,7 +764,7 @@ class Adventure(
         if transcended_chance > 8:
             monster_stats = random.uniform(1, 1.3)
             transcended = True
-        return monsters, monster_stats, transcended
+        return result, monster_stats, transcended
 
     async def _simple(self, ctx: commands.Context, adventure_msg, challenge: str = None, attribute: str = None):
         self.bot.dispatch("adventure", ctx)

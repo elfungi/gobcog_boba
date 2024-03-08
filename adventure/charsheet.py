@@ -1337,7 +1337,7 @@ class Character:
             level=level,
             degrade=degrade,
             _except=False,
-            ignore_case=False,
+            ignore_case=True,
             match=match,
             no_match=None
         )

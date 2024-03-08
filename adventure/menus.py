@@ -1432,7 +1432,6 @@ class InteractiveBackpackMenu(BaseMenu):
             if self._sold_count == SELL_CONFIRM_AMOUNT:
                 # confirm action
                 backpack_items = await self.get_backpack_item_for_sell()
-                print("Selling", backpack_items)
                 c, msg = await self._sell_callback(self.ctx, self._c, backpack_items)
                 self._c = c
                 self._sold_count = 0
@@ -1704,13 +1703,6 @@ class InteractiveBackpackMenu(BaseMenu):
                                         body_msg=body_msg,
                                         contextual_msg=contextual_msg),
             interaction=interaction)
-
-    async def do_change_source_from_search(self, interaction):
-        self._current_view = "search"
-        self._equippable = False
-        self._delta = False
-        self.reset_contextual_state()
-        await self.do_change_source(interaction)
 
     async def do_change_source_to_sets(self, interaction):
         self._c.get_set_bonus()
