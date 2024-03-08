@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.8"
+    __version__ = "4.7.9"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -575,9 +575,10 @@ class Adventure(
             next_start_time = int(cooldown + cooldown_time + 3)  # add 3s buffer for processing time
             await smart_embed(
                 ctx,
-                _("Alright {}, the next adventure will start in about <t:{}:R>!").format(ctx.author.display_name, next_start_time),
+                _("Alright {}, the next adventure will start approximately <t:{}:R>!").format(ctx.author.display_name, next_start_time),
             )
-            await asyncio.sleep(int(cooldown_time))
+            wait_time = int(next_start_time - time.time())
+            await asyncio.sleep(int(wait_time))
 
         if challenge and not (is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
             # Only let the bot owner specify a specific challenge
