@@ -1432,6 +1432,7 @@ class InteractiveBackpackMenu(BaseMenu):
             if self._sold_count == SELL_CONFIRM_AMOUNT:
                 # confirm action
                 backpack_items = await self.get_backpack_item_for_sell()
+                print("Selling", backpack_items)
                 c, msg = await self._sell_callback(self.ctx, self._c, backpack_items)
                 self._c = c
                 self._sold_count = 0
