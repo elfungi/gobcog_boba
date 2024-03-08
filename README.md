@@ -16,9 +16,14 @@ To start an adventure, use `[p]adventure` or `[p]a`. Reactions will appear under
 ## Auto Battle
 After taking an action in the battle, each user who manually participated will be placed on the auto-battle list.  
 
-These auto users will help participate in the next set number of fights based on the highest count action taken (i.e. if there are more Attackers than Casters, every Auto Battler will attack).  
+These auto players will help participate in the next set number of fights based on the highest count action taken.  
+If the number of players Attacking plus the number of players Casting add up to be higher than Talking, then auto players will 
+fight based on the preference set by `[p]auto mode`.  
+If the number of players Talking is higher than the number of players Attacking and Casting, then auto players
+will talk regardless of their auto mode.  
+If the number of Attackers plus Casters is equal to Talkers, then fighting will take higher priority.
+
 Clerics are an exception to this rule - they will always perform the Pray action, and non-Clerics will never Pray.  
-If any action sizes are equal, the order of priority for auto battling is Attack -> Magic -> Talk.
 
 Auto-battlers will gain 50% of the experience and gold from the encounter, but will receive the full amount of treasure.  
 
@@ -133,6 +138,11 @@ Preferred stat: INT
 `[p]skill`
 * When players level, they acquire skill points that they can use in improving one of the main stats (ATK, CHA, INT). These numbers are reset on a rebirth, but as players level in the rebirth level system, they will keep an increasingly larger amount of the base when they rebirth again.
 
+`[p]auto`
+* Use this to turn auto battling `on` or `off`. While `off`, you will not engage in any upcoming adventures automatically even if you manually join the fight.  
+When turning from `off` to `on` again, you must currently be in combat or enter combat manually to get back onto the auto list.
+* Use `p[auto] mode attack` to set your fight preference to attack or `p[auto] mode magic` to set it to cast.  
+If you don't set anything, you will fight based on your the higher stat between ATT and INT. If both are equal, ATT wins.
 
 ## More Advanced Commands for Players
 

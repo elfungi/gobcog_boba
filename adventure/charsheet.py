@@ -1624,7 +1624,7 @@ class Character:
             "rebirths": data.pop("rebirths", 0),
             "set_items": data.get("set_items", 0),
             "do_not_disturb": data.get("do_not_disturb", False),
-            "auto_pref": data.get("auto_pref", "attack")
+            "auto_pref": data.get("auto_pref", None)
         }
         for k, v in equipment.items():
             hero_data[k] = v

@@ -518,7 +518,7 @@ class CharacterCommands(AdventureMixin):
 
     @auto.command(name="mode")
     async def auto_mode(self, ctx: commands.Context, mode: str):
-        """Set your auto mode preference: "attack", "magic", "talk".
+        """Set your auto attack preference: "attack" or "magic".
         Note that clerics will always perform "pray", and non-clerics cannot "pray" in auto.
         """
         await ctx.defer()
@@ -529,8 +529,8 @@ class CharacterCommands(AdventureMixin):
                 log.exception("Error with the new character sheet", exc_info=exc)
                 return
             mode = mode.lower()
-            if mode not in ["attack", "magic", "talk"]:
-                await smart_embed(ctx, _("{}, please specify one of 'attack', 'magic', or 'talk'").format(escape(ctx.author.display_name)))
+            if mode not in ["attack", "magic"]:
+                await smart_embed(ctx, _("{}, please specify one of 'attack' or 'magic'").format(escape(ctx.author.display_name)))
             else:
                 c.auto_pref = mode
                 msg = "{}, your auto mode is now set to {}."

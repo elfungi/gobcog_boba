@@ -138,6 +138,7 @@ class ClassAbilities(AdventureMixin):
                 )
                 if c.lvl >= 10:
                     view = ConfirmView(60, ctx.author)
+                    need_wait = False
                     if current_class is HeroClasses.tinkerer:
                         await self._clear_react(class_msg)
                         msg = "{}, you will lose your forged device if you change your class."
@@ -153,6 +154,7 @@ class ClassAbilities(AdventureMixin):
                             ),
                             view=view,
                         )
+                        need_wait = True
                     elif c.heroclass["pet"]:
                         await self._clear_react(class_msg)
                         await class_msg.edit(
@@ -164,62 +166,64 @@ class ClassAbilities(AdventureMixin):
                             ),
                             view=view,
                         )
-                    await view.wait()
-                    if view.confirmed is None:
-                        ctx.command.reset_cooldown(ctx)
-                        return
-                    if view.confirmed:  # user reacted with Yes.
-                        if current_class is HeroClasses.tinkerer:
-                            tinker_wep = []
-                            for item in c.get_current_equipment():
-                                if item.rarity is Rarities.forged:
-                                    c = await c.unequip_item(item)
-                            for name, item in c.backpack.items():
-                                if item.rarity is Rarities.forged:
-                                    tinker_wep.append(item)
-                            for item in tinker_wep:
-                                del c.backpack[item.name]
+                        need_wait = True
+                    if need_wait:
+                        await view.wait()
+                        if view.confirmed is None:
+                            ctx.command.reset_cooldown(ctx)
+                            return
+                        if view.confirmed:  # user reacted with Yes.
                             if current_class is HeroClasses.tinkerer:
-                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
-                                if tinker_wep:
-                                    await class_msg.edit(
-                                        content=box(
-                                            _("{} has run off to find a new master.").format(humanize_list(tinker_wep)),
-                                            lang="ansi",
-                                        ),
-                                        view=None,
-                                    )
-                        if c.heroclass["pet"]:
-                            c.heroclass["ability"] = False
-                            c.heroclass["pet"] = {}
-                            c.heroclass["soulbound_pet"] = {}
-                            c.heroclass = clz.to_json()
+                                tinker_wep = []
+                                for item in c.get_current_equipment():
+                                    if item.rarity is Rarities.forged:
+                                        c = await c.unequip_item(item)
+                                for name, item in c.backpack.items():
+                                    if item.rarity is Rarities.forged:
+                                        tinker_wep.append(item)
+                                for item in tinker_wep:
+                                    del c.backpack[item.name]
+                                if current_class is HeroClasses.tinkerer:
+                                    await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                    if tinker_wep:
+                                        await class_msg.edit(
+                                            content=box(
+                                                _("{} has run off to find a new master.").format(humanize_list(tinker_wep)),
+                                                lang="ansi",
+                                            ),
+                                            view=None,
+                                        )
+                            if c.heroclass["pet"]:
+                                c.heroclass["ability"] = False
+                                c.heroclass["pet"] = {}
+                                c.heroclass["soulbound_pet"] = {}
+                                c.heroclass = clz.to_json()
 
-                            await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
+                                await self._clear_react(class_msg)
+                                await class_msg.edit(
+                                    content=box(
+                                        _("{} released their pet into the wild.\n").format(
+                                            escape(ctx.author.display_name)
+                                        ),
+                                        lang="ansi",
+                                    ),
+                                    view=None,
+                                )
+                            await class_msg.edit(content=class_msg.content + box(now_class_msg, lang="ansi"), view=None)
+                        else:
                             await self._clear_react(class_msg)
                             await class_msg.edit(
                                 content=box(
-                                    _("{} released their pet into the wild.\n").format(
-                                        escape(ctx.author.display_name)
+                                    _("{}, you will remain a {}").format(
+                                        escape(ctx.author.display_name), c.hc.class_name
                                     ),
                                     lang="ansi",
                                 ),
                                 view=None,
                             )
-                        await class_msg.edit(content=class_msg.content + box(now_class_msg, lang="ansi"), view=None)
-                    else:
-                        await self._clear_react(class_msg)
-                        await class_msg.edit(
-                            content=box(
-                                _("{}, you will remain a {}").format(
-                                    escape(ctx.author.display_name), c.hc.class_name
-                                ),
-                                lang="ansi",
-                            ),
-                            view=None,
-                        )
-                        ctx.command.reset_cooldown(ctx)
-                        return
+                            ctx.command.reset_cooldown(ctx)
+                            return
 
                     if c.skill["pool"] < 0:
                         c.skill["pool"] = 0
@@ -237,6 +241,7 @@ class ClassAbilities(AdventureMixin):
                     elif c.hc is HeroClasses.psychic:
                         c.heroclass["cooldown"] = max(300, (900 - max((c.luck - c.total_cha) * 2, 0))) + time.time()
                     c.heroclass["pet_cooldown"] = 1800  # 30 min flat
+                    c.auto_pref = None  # clear out auto pref to go back to default behavior
                     await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
                     await self._clear_react(class_msg)
                     await class_msg.edit(content=box(now_class_msg, lang="ansi"), view=None)

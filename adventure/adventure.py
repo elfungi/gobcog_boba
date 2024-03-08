@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.9"
+    __version__ = "4.7.10"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1241,32 +1241,7 @@ class Adventure(
         self._sessions[ctx.guild.id].pray = pray_list
         self._sessions[ctx.guild.id].magic = magic_list
         self._sessions[ctx.guild.id].auto = auto_list
-        fight_name_list = []
-        wizard_name_list = []
-        talk_name_list = []
-        pray_name_list = []
-        repair_list = []
-        for user in fight_list:
-            fight_name_list.append(f"{bold(user.display_name)}")
-        for user in magic_list:
-            wizard_name_list.append(f"{bold(user.display_name)}")
-        for user in talk_list:
-            talk_name_list.append(f"{bold(user.display_name)}")
-        for user in pray_list:
-            pray_name_list.append(f"{bold(user.display_name)}")
 
-        fighters_final_string = _(" and ").join(
-            [", ".join(fight_name_list[:-1]), fight_name_list[-1]] if len(fight_name_list) > 2 else fight_name_list
-        )
-        wizards_final_string = _(" and ").join(
-            [", ".join(wizard_name_list[:-1]), wizard_name_list[-1]] if len(wizard_name_list) > 2 else wizard_name_list
-        )
-        talkers_final_string = _(" and ").join(
-            [", ".join(talk_name_list[:-1]), talk_name_list[-1]] if len(talk_name_list) > 2 else talk_name_list
-        )
-        preachermen_final_string = _(" and ").join(
-            [", ".join(pray_name_list[:-1]), pray_name_list[-1]] if len(pray_name_list) > 2 else pray_name_list
-        )
         if session.no_monster:
             treasure = await self.get_treasure(session, 0, 0)
 
@@ -1330,6 +1305,33 @@ class Adventure(
         handled_fight_list, handled_magic_list, fumblelist, critlist, attack, magic, fight_msg = await self.handle_fight(
             ctx.guild.id, fumblelist, critlist, attack, magic
         )
+
+        fight_name_list = []
+        wizard_name_list = []
+        talk_name_list = []
+        pray_name_list = []
+        repair_list = []
+        for user in handled_fight_list:
+            fight_name_list.append(f"{bold(user.display_name)}")
+        for user in handled_magic_list:
+            wizard_name_list.append(f"{bold(user.display_name)}")
+        for user in handled_talk_list:
+            talk_name_list.append(f"{bold(user.display_name)}")
+        for user in handled_pray_list:
+            pray_name_list.append(f"{bold(user.display_name)}")
+        fighters_final_string = _(" and ").join(
+            [", ".join(fight_name_list[:-1]), fight_name_list[-1]] if len(fight_name_list) > 2 else fight_name_list
+        )
+        wizards_final_string = _(" and ").join(
+            [", ".join(wizard_name_list[:-1]), wizard_name_list[-1]] if len(wizard_name_list) > 2 else wizard_name_list
+        )
+        talkers_final_string = _(" and ").join(
+            [", ".join(talk_name_list[:-1]), talk_name_list[-1]] if len(talk_name_list) > 2 else talk_name_list
+        )
+        preachermen_final_string = _(" and ").join(
+            [", ".join(pray_name_list[:-1]), pray_name_list[-1]] if len(pray_name_list) > 2 else pray_name_list
+        )
+
         result_msg = pray_msg + talk_msg + fight_msg
         challenge_attrib = session.attribute
         hp = max(
@@ -1408,13 +1410,6 @@ class Adventure(
                 temp_repair = []
                 for user, loss, pet_loss in repair_list:
                     if user not in temp_repair:
-                        loss_list.append(
-                            _("\n{user} used {loss} {currency_name}").format(
-                                user=user.mention,
-                                loss=humanize_number(loss),
-                                currency_name=currency_name,
-                            )
-                        )
                         if pet_loss > 0:
                             loss_list.append(
                                 _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
@@ -1423,6 +1418,13 @@ class Adventure(
                                     currency_name=currency_name,
                                 )
                             )
+                        loss_list.append(
+                            _("\n{user} used {loss} {currency_name}").format(
+                                user=user.mention,
+                                loss=humanize_number(loss),
+                                currency_name=currency_name,
+                            )
+                        )
                         temp_repair.append(user)
                 if loss_list:
                     self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1462,13 +1464,6 @@ class Adventure(
                 temp_repair = []
                 for user, loss, pet_loss in repair_list:
                     if user not in temp_repair:
-                        loss_list.append(
-                            _("\n{user} used {loss} {currency_name}").format(
-                                user=user.mention,
-                                loss=humanize_number(loss),
-                                currency_name=currency_name,
-                            )
-                        )
                         if pet_loss > 0:
                             loss_list.append(
                                 _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
@@ -1477,6 +1472,13 @@ class Adventure(
                                     currency_name=currency_name,
                                 )
                             )
+                        loss_list.append(
+                            _("\n{user} used {loss} {currency_name}").format(
+                                user=user.mention,
+                                loss=humanize_number(loss),
+                                currency_name=currency_name,
+                            )
+                        )
                         temp_repair.append(user)
                 if loss_list:
                     self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1550,13 +1552,6 @@ class Adventure(
                     temp_repair = []
                     for user, loss, pet_loss in repair_list:
                         if user not in temp_repair:
-                            loss_list.append(
-                                _("\n{user} used {loss} {currency_name}").format(
-                                    user=user.mention,
-                                    loss=humanize_number(loss),
-                                    currency_name=currency_name,
-                                )
-                            )
                             if pet_loss > 0:
                                 loss_list.append(
                                     _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
@@ -1565,6 +1560,13 @@ class Adventure(
                                         currency_name=currency_name,
                                     )
                                 )
+                            loss_list.append(
+                                _("\n{user} used {loss} {currency_name}").format(
+                                    user=user.mention,
+                                    loss=humanize_number(loss),
+                                    currency_name=currency_name,
+                                )
+                            )
                             temp_repair.append(user)
                     if loss_list:
                         self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1738,13 +1740,6 @@ class Adventure(
             temp_repair = []
             for user, loss, pet_loss in repair_list:
                 if user not in temp_repair:
-                    loss_list.append(
-                        _("\n{user} used {loss} {currency_name}").format(
-                            user=user.mention,
-                            loss=humanize_number(loss),
-                            currency_name=currency_name,
-                        )
-                    )
                     if pet_loss > 0:
                         loss_list.append(
                             _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
@@ -1753,6 +1748,13 @@ class Adventure(
                                 currency_name=currency_name,
                             )
                         )
+                    loss_list.append(
+                        _("\n{user} used {loss} {currency_name}").format(
+                            user=user.mention,
+                            loss=humanize_number(loss),
+                            currency_name=currency_name,
+                        )
+                    )
                     temp_repair.append(user)
             if loss_list:
                 self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
@@ -1849,17 +1851,7 @@ class Adventure(
     async def handle_fight(self, guild_id, fumblelist, critlist, attack, magic):
         session = self._sessions[guild_id]
         ctx = session.ctx
-        fight_list = list(set(session.fight))
-        magic_list = list(set(session.magic))
-
-        len_fight_list = len(session.fight)
-        len_magic_list = len(session.magic)
-
-        if len_fight_list >= len(session.magic) and len_fight_list >= len(session.talk):
-            fight_list += await self.filter_clerics_from_auto(ctx)
-        elif len_magic_list > len(session.fight) and len_magic_list >= len(session.talk):
-            magic_list += await self.filter_clerics_from_auto(ctx)
-
+        fight_list, magic_list = await self.extract_auto_fight_lists(ctx)
         attack_list = list(set(fight_list + magic_list))
         pdef = max(session.monster_modified_stats["pdef"], 0.5)
         mdef = max(session.monster_modified_stats["mdef"], 0.5)
@@ -2066,19 +2058,11 @@ class Adventure(
         ctx = session.ctx
         pray_list = list(set(session.pray + session.auto))  # add auto users to this list to check for clerics
         talk_list = list(set(session.talk))
-        fight_list = list(set(session.fight))
-        magic_list = list(set(session.magic))
+        fight_list, magic_list = await self.extract_auto_fight_lists(ctx)
 
-        len_fight_list = len(fight_list)
-        len_magic_list = len(magic_list)
-        len_talk_list = len(talk_list)
-        if len_fight_list >= len_magic_list and len_fight_list >= len_talk_list:
-            fight_list += await self.filter_clerics_from_auto(ctx)
-        elif len_magic_list > len_fight_list and len_magic_list >= len_talk_list:
-            magic_list += await self.filter_clerics_from_auto(ctx)
-        elif len_talk_list > len_fight_list and len_talk_list > len_magic_list:
+        if len(talk_list) > (len(fight_list) + len(magic_list)):
             talk_list += await self.filter_clerics_from_auto(ctx)
-        # get updated length
+
         len_fight_list = len(fight_list)
         len_talk_list = len(talk_list)
         len_magic_list = len(magic_list)
@@ -2243,7 +2227,7 @@ class Adventure(
         talk_list = list(set(session.talk))
         len_talk_list = len(talk_list)
 
-        if len_talk_list > len(session.fight) and len_talk_list > len(session.magic):
+        if len_talk_list > (len(session.fight) + len(session.magic)):
             talk_list += await self.filter_clerics_from_auto(ctx)
 
         if len_talk_list >= 1:
@@ -2385,6 +2369,31 @@ class Adventure(
             if c.hc is not HeroClasses.cleric:
                 results.append(user)
         return results
+
+    async def extract_auto_fight_lists(self, ctx):
+        session = self._sessions[ctx.guild.id]
+        if len(session.talk) > (len(session.fight) + len(session.magic)):
+            # more talkers - just return the manual attack and magic lists
+            return list(session.fight), list(session.magic)
+        else:
+            fight_list = list(session.fight)
+            magic_list = list(session.magic)
+            for user in session.auto:
+                try:
+                    c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
+                except Exception as exc:
+                    log.exception("Error with the new character sheet", exc_info=exc)
+                    continue
+                if c.hc is not HeroClasses.cleric:
+                    auto_pref = c.auto_pref
+                    if not auto_pref:
+                        auto_pref = "attack" if c.total_att > c.total_int else "magic"
+                    if auto_pref == "attack":
+                        fight_list.append(user)
+                    else:
+                        magic_list.append(user)
+            return fight_list, magic_list
+
 
     async def _add_rewards(
         self, ctx: commands.Context, user: Union[discord.Member, discord.User], exp: int, cp: int, special: Treasure
