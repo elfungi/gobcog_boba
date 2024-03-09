@@ -355,7 +355,7 @@ class Character:
             "daily_bonus_mapping", {"1": 0, "2": 0, "3": 0.5, "4": 0, "5": 0.5, "6": 1.0, "7": 1.0}
         )
         self.do_not_disturb = kwargs.pop("do_not_disturb", False)
-        self.auto_pref = kwargs.pop("auto_pref", "attack")
+        self.auto_pref = kwargs.pop("auto_pref", None)
 
     @property
     def hc(self) -> HeroClasses:

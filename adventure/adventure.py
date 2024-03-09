@@ -2386,7 +2386,7 @@ class Adventure(
                     continue
                 if c.hc is not HeroClasses.cleric:
                     auto_pref = c.auto_pref
-                    if not auto_pref:
+                    if auto_pref is None:
                         auto_pref = "attack" if c.total_att > c.total_int else "magic"
                     if auto_pref == "attack":
                         fight_list.append(user)
