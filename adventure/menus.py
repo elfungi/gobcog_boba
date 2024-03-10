@@ -413,7 +413,7 @@ class BaseBackpackSource(menus.ListPageSource):
     def __init__(self, entries: List[Dict], per_page=10):
         super().__init__(entries, per_page=per_page)
         self.col_name_len = 64
-        self.col_slot_len = 8
+        self.col_slot_len = 10
         self.col_attr_len = 6
         self.col_rar_len = 12
 
@@ -423,11 +423,11 @@ class BaseBackpackSource(menus.ListPageSource):
     def build_item_headers(self, exclude_cols=None):
         if exclude_cols is None:
             exclude_cols = []
-        header = (
-            f"{self.format_ansi('Name'):{self.col_name_len}}"  # use ansi on this field to match spacing on table
-            f"{'Rarity':{self.col_rar_len}}"
-            f"{'Slot':{self.col_slot_len}}"
-        )
+        header = f"{self.format_ansi('Name'):{self.col_name_len}}"  # use ansi on this field to match spacing on table
+        if "Rarity" not in exclude_cols:
+            header += f"{'Rarity':{self.col_rar_len}}"
+        header += f"{'Slot':{self.col_slot_len}}"
+
         for col in ['ATT', 'CHA', 'INT', 'DEX', 'LUK', 'QTY', 'DEG', 'LVL']:
             if col not in exclude_cols:
                 if col == 'LVL':
@@ -449,11 +449,11 @@ class BaseBackpackSource(menus.ListPageSource):
 
             rarity_ansi = rarity.rarity_colour.value
             ansi_name = self.format_ansi(name, rarity_ansi)
-            i_data = (
-                f"{ansi_name:{self.col_name_len}}"
-                f"{rarity:{self.col_rar_len}}"
-                f"{slot:{self.col_slot_len}}"
-            )
+            i_data = f"{ansi_name:{self.col_name_len}}"
+            if "rarity" not in exclude_cols:
+                i_data += f"{rarity:{self.col_rar_len}}"
+            i_data += f"{slot:{self.col_slot_len}}"
+
             for col in ["att", "cha", "int", "dex", "luck", "owned", "degrade", "lvl"]:
                 if col not in exclude_cols:
                     value = item.get(col, 0)
@@ -592,7 +592,9 @@ class PrettySetInfoSource(BaseBackpackSource):
         )
         return set_data
 
-    def format_set_bonus_data(self, bonus, include_owned=True):
+    def format_set_bonus_data(self, bonus, include_owned=True, name_col_len=None):
+        if not name_col_len:
+            name_col_len = self.col_set_len
         parts = bonus["parts"]
         parts_pieces = "Pieces: {}".format(str(parts))
         if include_owned and self._character_set_count >= parts:
@@ -600,7 +602,7 @@ class PrettySetInfoSource(BaseBackpackSource):
         else:
             parts_pieces = self.format_ansi(parts_pieces, ANSITextColours.white)
         bonus_data = (
-            f"{str(parts_pieces):{self.col_set_len}}"
+            f"{str(parts_pieces):{name_col_len}}"
             f"{self.format_data(bonus)}"
         )
         return bonus_data
@@ -617,19 +619,22 @@ class PrettySetInfoSource(BaseBackpackSource):
             total = self.gather_total_amount(entry.values())
             total_str = self.format_set_bonus_data(total).replace("Pieces: 100", "Total      ")
             msg = self.wrap_ansi(data_str + "\n\n" + total_str)
-
         return msg
 
-    def build_set_entry_block(self, entry, included_owned=True):
+    def build_set_entry_data(self, entry, include_owned=True):
         data = []
         for bonus in entry:
-            data.append(self.format_set_bonus_data(bonus, included_owned))
+            data.append(self.format_set_bonus_data(bonus, include_owned))
         data_str = "\n".join(data)
         total = self.gather_total_amount(entry)
         total_str = self.format_set_bonus_data(total).replace("Pieces: 100", "Total      ")
+        return data_str, total_str
+
+    def build_set_entry_block(self, entry, include_owned=True):
+        data_str, total_str = self.build_set_entry_data(entry, include_owned)
         msg = self.wrap_ansi(data_str + "\n\n" + total_str)
 
-        if included_owned:
+        if include_owned:
             owned = self.gather_total_amount(entry, self._character_set_count)
             owned_str = self.format_set_bonus_data(owned).replace("Pieces:", "Owned: ")
             msg += self.wrap_ansi(owned_str)
@@ -645,29 +650,27 @@ class PrettySetInfoSource(BaseBackpackSource):
             msg += self.wrap_ansi(self.build_set_info_header())
             msg += self.build_char_set_data_block(entry)
         elif position == 1:
-            # 2nd page is set piece bonuses
-            msg += self.wrap_ansi(self.build_set_info_header())
-            msg += self.build_set_entry_block(entry)
-        elif position == self.get_max_pages() - 1:
-            # last page is items in set
-            data = self.build_item_data(entry, exclude_cols=['owned', 'degrade', 'set'])
+            # 2nd page is set items
+            items = entry[:-1]
+            data = self.build_item_data(items, exclude_cols=['rarity', 'degrade', 'set'])
             data_str = "\n".join(data)
-            msg += self.wrap_ansi(self.build_item_headers(exclude_cols=['QTY', 'DEG']))
+            msg += self.wrap_ansi(self.build_item_headers(exclude_cols=['Rarity', 'DEG']))
             msg += self.wrap_ansi(data_str)
+
+            owned_bonuses = entry[-1]
+            owned_bonuses["parts"] = self._character_set_count
+            msg_body = self.build_set_info_header("Total Equipable Bonus", (self.col_set_len - 5))
+            msg_body += "\n" + self.format_set_bonus_data(owned_bonuses, True, (self.col_set_len - 5))
+            msg += self.wrap_ansi(msg_body)
         else:
             # part upgrades
+            msg += self.wrap_ansi(self.build_set_info_header(name="Set Bonus Upgrades"))
             for k, v in entry.items():
-                # should only have 1 entry in the dict
-                name = (
-                    f"Set Bonus Upgrades - "
-                    f"{self.format_ansi('QTY ' + str(k), ANSITextColours.yellow)}"
-                )
-                msg += self.wrap_ansi(self.build_set_info_header(name=name, name_col_len=(self.col_set_len + 9)))
-                msg += self.build_set_entry_block(v, included_owned=False)
-
+                data_str, total_str = self.build_set_entry_data(v, include_owned=False)
+                msg_body = "{}\n\n".format(self.format_ansi('QTY ' + str(k), ANSITextColours.yellow))
+                msg_body += data_str + "\n\n" + total_str
+                msg += self.wrap_ansi(msg_body)
         footer = f"Page {menu.current_page + 1}/{self.get_max_pages()}"
-        if menu.current_page > 0:
-            footer += "  - Equipped bonuses are on Page 1"
         msg += self.wrap_ansi(footer)
         return msg
 
@@ -1709,39 +1712,13 @@ class InteractiveBackpackMenu(BaseMenu):
         source = PrettySetInfoSource(entries=[self._c.partial_sets])
         await self.change_source(source=source, interaction=interaction)
 
-    @staticmethod
-    def get_slot_index(slot: Union[Slot, tuple, list]):
-        if isinstance(slot, str):
-            slot = Slot.from_list([slot])
-        elif isinstance(slot, (tuple, list)):
-            slot = Slot.from_list(slot)
-        return slot.order()
-
     def build_set_items(self, set_name):
-        cog = self.ctx.bot.get_cog("Adventure")
-        set_items = {key: value for key, value in cog.TR_GEAR_SET.items() if value["set"] == set_name}
-
-        d = {}
-        for k, v in set_items.items():
-            if len(v["slot"]) > 1:
-                d.update({v["slot"][0]: {k: v}})
-                d.update({v["slot"][1]: {k: v}})
-            else:
-                d.update({v["slot"][0]: {k: v}})
-
+        set_items = self._c.get_set_items(set_name)
         data = []
-        data_sorted = sorted(d.items(), key=self.get_slot_index)
-        two_handed_item = None
-        for (slot, d) in data_sorted:
-            item = Item.from_json(self.ctx, d)
+        for item in set_items:
             item_level = self._c.equip_level(item)
             cannot_equip = item_level > self._c.lvl
             if item.slot == Slot.two_handed:
-                # two-handed items are in the list twice so must deal with them differently
-                if two_handed_item:
-                    # skip if we've already processed a two-handed item
-                    continue
-                two_handed_item = item
                 cannot_equip = item_level > self._c.lvl
                 i_data = {"name": item.name, "slot": item.slot, "att": item.att * 2, "cha": item.cha * 2, "int": item.int * 2,
                           "dex": item.dex * 2, "luck": item.luck * 2, "owned": item.owned, "rarity": item.rarity, "set": item.set,
@@ -1753,40 +1730,25 @@ class InteractiveBackpackMenu(BaseMenu):
             data.append(i_data)
         return data
 
-    @staticmethod
-    def build_set_bonus_upgrades(set_bonuses, set_upgrades):
-        result = []
-        for set_upgrade in set_upgrades:
-            upgrade_result = []
-            key = set_upgrade["upgrades"]
-            for set_bonus in set_bonuses:
-                entry = {}
-                for k, v in set_bonus.items():
-                    if k == "parts":
-                        attr = v
-                    elif "mult" in k:
-                        if set_upgrade[k] > 1:
-                            attr = v + (set_upgrade[k] - 1)
-                        else:
-                            attr = v - (1 - set_upgrade[k])
-                    else:
-                        attr = v + set_upgrade[k]
-                    entry[k] = attr
-                upgrade_result.append(entry)
-            result.append({key: upgrade_result})
-        return result
-
     async def do_change_setinfo_source(self, interaction, set_name):
         cog = self.ctx.bot.get_cog("Adventure")
-        set_bonuses = cog.SET_BONUSES
-        set_upgrades = cog.SET_UPGRADES
+        set_bonuses = cog.SET_BONUSES.get(set_name)
+        set_upgrades = cog.SET_UPGRADES.get(set_name)
 
         set_items = self.build_set_items(set_name)
+        owned_set_bonus = self._c.get_set_bonus_with_upgrades(set_name)
+        set_items.append(owned_set_bonus)
+
         self._c.get_set_bonus()
-        set_upgrades_expanded = self.build_set_bonus_upgrades(set_bonuses.get(set_name), set_upgrades.get(set_name))
-        entries = [self._c.partial_sets, set_bonuses.get(set_name)]
-        entries += set_upgrades_expanded
-        entries.append(set_items)
+        self._c.get_set_bonus_with_upgrades(set_name)
+        set_upgrades_expanded = {1: set_bonuses}
+        set_upgrades_expanded.update(self._c.build_set_bonus_upgrades(set_bonuses, set_upgrades))
+        set_upgrades_1 = {key: set_upgrades_expanded[key] for key in
+                          sorted(set_upgrades_expanded.keys() & {1, 3})}
+        set_upgrades_2 = {key: set_upgrades_expanded[key] for key in
+                          sorted(set_upgrades_expanded.keys() & {5, 10})}
+        set_upgrades_3 = {20: set_upgrades_expanded[20]}
+        entries = [self._c.partial_sets, set_items, set_upgrades_1, set_upgrades_2, set_upgrades_3]
 
         sets = await self._c.get_set_count()
         character_set_count = sets[set_name][1]
@@ -1795,7 +1757,7 @@ class InteractiveBackpackMenu(BaseMenu):
                                                                     set_name=set_name,
                                                                     entries=entries),
                                          interaction=interaction,
-                                         page=1)
+                                         page=1)  # start at page 1 where set items are
 
     async def do_open_loot(self, interaction, rarity, number):
         c, opened_items, msg = await self._open_loot_callback(self.ctx, self._c, rarity, number)

@@ -93,13 +93,13 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.11"
+    __version__ = "4.7.12"
 
     def __init__(self, bot: Red):
         self.bot = bot
         bank._init(bot)
         self._last_trade = {}
-        self._adv_results = AdventureResults(10)
+        self._adv_results = AdventureResults(20)
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}\N{VARIATION SELECTOR-16}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"

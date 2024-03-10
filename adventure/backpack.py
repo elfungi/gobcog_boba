@@ -255,8 +255,6 @@ class BackPackCommands(AdventureMixin):
                 log.exception("Error with the new character sheet", exc_info=exc)
                 return
             equiplevel = c.equip_level(equip_item)
-            if is_dev(ctx.author):  # FIXME:
-                equiplevel = 0
 
             if not c.can_equip(equip_item):
                 return await smart_embed(
@@ -285,7 +283,7 @@ class BackPackCommands(AdventureMixin):
                         lang="ansi",
                     )
 
-                c = await c.equip_item(equip, True, is_dev(ctx.author))  # FIXME:
+                c = await c.equip_item(equip, True)
                 await self.config.user(ctx.author).set(await c.to_json(ctx, self.config))
         await ctx.send(equip_msg)
 

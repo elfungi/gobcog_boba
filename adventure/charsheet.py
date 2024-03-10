@@ -484,6 +484,118 @@ class Character:
             )
         return set_names
 
+    @staticmethod
+    def get_slot_index(slot: Union[Slot, tuple, list]):
+        if isinstance(slot, str):
+            slot = Slot.from_list([slot])
+        elif isinstance(slot, (tuple, list)):
+            slot = Slot.from_list(slot)
+        return slot.order()
+
+    def get_set_items(self, set_name, equip_only=False):
+        cog = self._ctx.bot.get_cog("Adventure")
+        set_items = {key: value for key, value in cog.TR_GEAR_SET.items() if value["set"] == set_name}
+
+        d = {}
+        for k, v in set_items.items():
+            if len(v["slot"]) > 1:
+                d.update({v["slot"][0]: {k: v}})
+                d.update({v["slot"][1]: {k: v}})
+            else:
+                d.update({v["slot"][0]: {k: v}})
+
+        data = []
+        data_sorted = sorted(d.items(), key=self.get_slot_index)
+        two_handed_item = None
+        for (slot, d) in data_sorted:
+            item = Item.from_json(self._ctx, d)
+            if item.slot == Slot.two_handed:
+                # two-handed items are in the list twice so must deal with them differently
+                if two_handed_item:
+                    # skip if we've already processed a two-handed item
+                    continue
+                two_handed_item = item
+            backpack_item = self.backpack.get(item.name, None)
+            equip_item = self.equipment[slot]
+            if equip_only and equip_item and equip_item.name == item.name:
+                data.append(equip_item)
+            else:
+                if backpack_item:
+                    data.append(backpack_item)
+                elif equip_item and equip_item.name == item.name:
+                    data.append(equip_item)
+                else:
+                    item.owned = 0
+                    data.append(item)
+        return data
+
+    @staticmethod
+    def count_items_owned(items, amount):
+        return len(list(filter(lambda i: i.owned >= amount, items)))
+
+    @staticmethod
+    def build_set_bonus_upgrades(set_bonuses, set_upgrades):
+        results = {}
+        for set_upgrade in set_upgrades:
+            upgrade_result = []
+            key = set_upgrade["upgrades"]
+            for set_bonus in set_bonuses:
+                entry = {}
+                for k, v in set_bonus.items():
+                    if k == "parts":
+                        attr = v
+                    elif "mult" in k:
+                        if set_upgrade[k] > 1:
+                            attr = v + (set_upgrade[k] - 1)
+                        else:
+                            attr = v - (1 - set_upgrade[k])
+                    else:
+                        attr = v + set_upgrade[k]
+                    entry[k] = attr
+                upgrade_result.append(entry)
+            results[key] = upgrade_result
+        return results
+
+    def get_set_bonus_with_upgrades(self, set_name, equip_only=False):
+        set_items = self.get_set_items(set_name, equip_only)
+        set_bonuses = self._ctx.bot.get_cog("Adventure").SET_BONUSES.get(set_name, [])
+        set_upgrades = self._ctx.bot.get_cog("Adventure").SET_UPGRADES.get(set_name, [])
+        set_upgrades_expanded = {1: set_bonuses}
+        set_upgrades_expanded.update(self.build_set_bonus_upgrades(set_bonuses, set_upgrades))
+
+        set_info = {
+            "att": 0,
+            "cha": 0,
+            "int": 0,
+            "dex": 0,
+            "luck": 0,
+            "statmult": 1.0,
+            "xpmult": 1.0,
+            "cpmult": 1.0
+        }
+        parts = self.count_items_owned(set_items, 1)
+        for bonus in set_bonuses:
+            required_parts = bonus.get("parts", 100)
+            if required_parts > parts:
+                continue
+            highest_amount = 1
+            for i in [3, 5, 10, 20]:
+                num_owned_at_upgrade = self.count_items_owned(set_items, i)
+                if num_owned_at_upgrade >= required_parts:
+                    highest_amount = i
+            highest_bonus = next((x for x in set_upgrades_expanded[highest_amount] if x["parts"] == required_parts), None)
+            for key, value in highest_bonus.items():
+                if key == "parts":
+                    continue
+                if key not in ["cpmult", "xpmult", "statmult"]:
+                    set_info[key] += value
+                elif key in ["cpmult", "xpmult", "statmult"]:
+                    if value > 1:
+                        set_info[key] += value - 1
+                    elif value >= 0:
+                        set_info[key] -= 1 - value
+        return set_info
+
     def get_set_bonus(self):
         set_names = {}
         last_slot = ""
@@ -520,70 +632,18 @@ class Character:
         partial_sets = [(s, v[1]) for s, v in set_names.items()]
         self.sets = [s for s, _ in full_sets if s]
         for _set, parts in partial_sets:
-            set_bonuses = self._ctx.bot.get_cog("Adventure").SET_BONUSES.get(_set, [])
-            set_upgrades = self._ctx.bot.get_cog("Adventure").SET_UPGRADES.get(_set, [])
-
-            highest_required_parts = 0
-            set_info = {
-                "att": 0,
-                "cha": 0,
-                "int": 0,
-                "dex": 0,
-                "luck": 0,
-                "statmult": 1.0,
-                "xpmult": 1.0,
-                "cpmult": 1.0
-            }
-            for bonus in set_bonuses:
-                required_parts = bonus.get("parts", 100)
-                if required_parts > parts:
-                    continue
-                for key, value in bonus.items():
-                    if key == "parts":
-                        continue
-                    if key not in ["cpmult", "xpmult", "statmult"]:
-                        set_info[key] += value
-                        base[key] += value
-                    elif key in ["cpmult", "xpmult", "statmult"]:
-                        if value > 1:
-                            set_info[key] += value - 1
-                            base[key] += value - 1
-                        elif value >= 0:
-                            set_info[key] -= 1 - value
-                            base[key] -= 1 - value
-                highest_required_parts = max(highest_required_parts, required_parts)
-            set_info["parts"] = highest_required_parts
-
-            set_items_owned = []
-            for item_name in added.keys():
-                item = added[item_name]
-                if item.set == _set:
-                    set_items_owned.append(item.owned)
-
-            if highest_required_parts > 0:
-                highest_upgrade = {}
-                for set_upgrade in set_upgrades:
-                    upgrade = set_upgrade.get("upgrades", 100)
-                    count = len([i for j,i in enumerate(set_items_owned) if i >= upgrade])
-                    if count >= highest_required_parts:
-                        highest_upgrade = set_upgrade
-
-                if highest_upgrade:
-                    for set_bonus in set_bonuses:
-                        for k, v in set_bonus.items():
-                            if k == "parts":
-                                continue
-                            elif "mult" in k:
-                                if highest_upgrade[k] > 1:
-                                    set_info[k] += (highest_upgrade[k] - 1)
-                                    base[k] += (highest_upgrade[k] - 1)
-                                else:
-                                    set_info[k] -= (1 - highest_upgrade[k])
-                                    base[k] -= (1 - highest_upgrade[k])
-                            else:
-                                set_info[k] += highest_upgrade[k]
-                                base[k] += highest_upgrade[k]
-                self.partial_sets[_set] = set_info
+            set_info = self.get_set_bonus_with_upgrades(_set, True)
+            for k in ['att', 'cha', 'int', 'dex', 'luck']:
+                base[k] += set_info[k]
+            for k in ['statmult', 'xpmult', 'cpmult']:
+                value = set_info[k]
+                if value > 1:
+                    base[k] += value - 1
+                elif value >= 0:
+                    base[k] -= 1 - value
+            set_info["parts"] = parts
+            print(_set, parts, set_info)
+            self.partial_sets[_set] = set_info
 
         self.gear_set_bonus = base
         self.gear_set_bonus["cpmult"] = max(0, self.gear_set_bonus["cpmult"])
@@ -1405,19 +1465,15 @@ class Character:
         diff = int(comparing_to_stat - equipped_stat)
         return f"[{diff}]" if diff < 0 else f"+{diff}" if diff > 0 else "0"
 
-    async def equip_item(self, item: Item, from_backpack: bool = True, dev=False):
+    async def equip_item(self, item: Item, from_backpack: bool = True):
         """This handles moving an item from backpack to equipment."""
         equiplevel = self.equip_level(item)
         if equiplevel > self.lvl:
-            if not dev:
-                if not from_backpack:
-                    await self.add_to_backpack(item)
-                return self
+            if not from_backpack:
+                await self.add_to_backpack(item)
+            return self
         if from_backpack and item.name in self.backpack:
-            if self.backpack[item.name].owned > 1:
-                self.backpack[item.name].owned -= 1
-            else:
-                del self.backpack[item.name]
+            del self.backpack[item.name]
         if item.slot is not Slot.two_handed:
             current = getattr(self, item.slot.name)
             if current:

@@ -30,76 +30,76 @@
         {"upgrades": 20, "att": 210, "cha": 120, "int": 0, "dex": 60, "luck": 60, "statmult": 1.1, "xpmult": 1.6, "cpmult": 1.45}
     ],
     "World Breaker": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 35, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.2},
+        {"upgrades": 5, "att": 5, "cha": 5, "int": 5, "dex": 5, "luck": 40, "statmult": 1.0, "xpmult": 1.1, "cpmult": 1.25},
+        {"upgrades": 10, "att": 15, "cha": 15, "int": 15, "dex": 15, "luck": 55, "statmult": 1.05, "xpmult": 1.15, "cpmult": 1.3},
+        {"upgrades": 20, "att": 25, "cha": 25, "int": 25, "dex": 25, "luck": 70, "statmult": 1.1, "xpmult": 1.2, "cpmult": 1.4}
     ],
     "Thunderfury": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 5, "cha": 5, "int": 5, "dex": 5, "luck": 5, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.25},
+        {"upgrades": 5, "att": 10, "cha": 10, "int": 10, "dex": 10, "luck": 10, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.5},
+        {"upgrades": 10, "att": 20, "cha": 20, "int": 20, "dex": 20, "luck": 20, "statmult": 1.05, "xpmult": 1.0, "cpmult": 1.6},
+        {"upgrades": 20, "att": 30, "cha": 30, "int": 30, "dex": 30, "luck": 30, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.7}
     ],
     "Slobberknocker": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 5, "cha": 5, "int": 5, "dex": 5, "luck": 5, "statmult": 1.05, "xpmult": 1.0, "cpmult": 1.05},
+        {"upgrades": 5, "att": 15, "cha": 15, "int": 15, "dex": 15, "luck": 10, "statmult": 1.05, "xpmult": 1.0, "cpmult": 1.05},
+        {"upgrades": 10, "att": 40, "cha": 40, "int": 40, "dex": 40, "luck": 40, "statmult": 1.1, "xpmult": 1.05, "cpmult": 1.1},
+        {"upgrades": 20, "att": 60, "cha": 60, "int": 60, "dex": 60, "luck": 60, "statmult": 1.15, "xpmult": 1.1, "cpmult": 1.15}
     ],
     "The Groovinator": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 30, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 0, "cha": 0, "int": 20, "dex": 0, "luck": 30, "statmult": 1.0, "xpmult": 1.05, "cpmult": 1.05},
+        {"upgrades": 10, "att": 0, "cha": 30, "int": 40, "dex": 0, "luck": 60, "statmult": 1.05, "xpmult": 1.05, "cpmult": 1.05},
+        {"upgrades": 20, "att": 0, "cha": 45, "int": 60, "dex": 0, "luck": 80, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.1}
     ],
     "The Paninator": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 7, "cha": 5, "int": 1, "dex": 6, "luck": 10, "statmult": 1.05, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 14, "cha": 9, "int": 2, "dex": 12, "luck": 20, "statmult": 1.05, "xpmult": 1.05, "cpmult": 1.05},
+        {"upgrades": 10, "att": 24, "cha": 19, "int": 4, "dex": 19, "luck": 29, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.1},
+        {"upgrades": 20, "att": 34, "cha": 29, "int": 14, "dex": 29, "luck": 39, "statmult": 1.15, "xpmult": 1.15, "cpmult": 1.15}
     ],
     "Unholy Seasoning": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.1, "cpmult": 1.1},
+        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.1},
+        {"upgrades": 10, "att": 25, "cha": 0, "int": 0, "dex": 10, "luck": 0, "statmult": 1.15, "xpmult": 1.15, "cpmult": 1.1},
+        {"upgrades": 20, "att": 45, "cha": 0, "int": 0, "dex": 20, "luck": 0, "statmult": 1.2, "xpmult": 1.2, "cpmult": 1.15}
     ],
     "Mad Mook": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 7, "cha": 0, "int": 7, "dex": 0, "luck": 8, "statmult": 1.05, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 14, "cha": 0, "int": 14, "dex": 0, "luck": 18, "statmult": 1.05, "xpmult": 1.05, "cpmult": 1.1},
+        {"upgrades": 10, "att": 36, "cha": 0, "int": 36, "dex": 0, "luck": 38, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.15},
+        {"upgrades": 20, "att": 56, "cha": 0, "int": 56, "dex": 0, "luck": 68, "statmult": 1.2, "xpmult": 1.15, "cpmult": 1.25}
     ],
     "Badass Bop": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 2.0, "xpmult": 2.0, "cpmult": 2.0},
+        {"upgrades": 5, "att": 0, "cha": 0, "int": 50, "dex": 0, "luck": 0, "statmult": 2.00, "xpmult": 2.0, "cpmult": 2.0},
+        {"upgrades": 10, "att": 0, "cha": 0, "int": 150, "dex": 0, "luck": 0, "statmult": 2.02, "xpmult": 2.4, "cpmult": 2.4},
+        {"upgrades": 20, "att": 0, "cha": 0, "int": 250, "dex": 0, "luck": 0, "statmult": 2.05, "xpmult": 2.5, "cpmult": 2.5}
     ],
     "Dreadnaughts Battlegear": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 20, "int": 0, "dex": 5, "luck": 5, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 15, "cha": 20, "int": 15, "dex": 5, "luck": 5, "statmult": 1.0, "xpmult": 1.1, "cpmult": 1.0},
+        {"upgrades": 10, "att": 25, "cha": 20, "int": 25, "dex": 15, "luck": 15, "statmult": 1.05, "xpmult": 1.2, "cpmult": 1.05},
+        {"upgrades": 20, "att": 50, "cha": 25, "int": 50, "dex": 35, "luck": 35, "statmult": 1.1, "xpmult": 1.25, "cpmult": 1.1}
     ],
     "Fangs of the Father": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 5, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 5, "cha": 20, "int": 15, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 10, "att": 20, "cha": 50, "int": 25, "dex": 10, "luck": 0, "statmult": 1.0, "xpmult": 1.1, "cpmult": 1.0},
+        {"upgrades": 20, "att": 25, "cha": 75, "int": 30, "dex": 20, "luck": 10, "statmult": 1.05, "xpmult": 1.2, "cpmult": 1.0}
     ],
     "Titanic Empowerment": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 0, "cha": 0, "int": 40, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 20, "cha": 0, "int": 40, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 10, "att": 40, "cha": 0, "int": 40, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.05, "cpmult": 1.1},
+        {"upgrades": 20, "att": 90, "cha": 50, "int": 40, "dex": 0, "luck": 0, "statmult": 1.05, "xpmult": 1.1, "cpmult": 1.2}
     ],
     "Demonbane Armor": [
-        {"upgrades": 3, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
-        {"upgrades": 20, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0}
+        {"upgrades": 3, "att": 50, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.0, "cpmult": 1.0},
+        {"upgrades": 5, "att": 50, "cha": 0, "int": 50, "dex": 0, "luck": 0, "statmult": 1.0, "xpmult": 1.1, "cpmult": 1.0},
+        {"upgrades": 10, "att": 50, "cha": 20, "int": 70, "dex": 0, "luck": 0, "statmult": 1.05, "xpmult": 1.15, "cpmult": 1.0},
+        {"upgrades": 20, "att": 50, "cha": 30, "int": 80, "dex": 0, "luck": 0, "statmult": 1.15, "xpmult": 1.2, "cpmult": 1.05}
     ],
     "The King of Mages": [
         {"upgrades": 3, "att": 1000, "cha": 1000, "int": 0, "dex": 20, "luck": 20, "statmult": 1.0, "xpmult": 1.25, "cpmult": 1.0},

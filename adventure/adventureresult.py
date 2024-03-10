@@ -54,7 +54,7 @@ class AdventureResults:
         # add manual users to the next auto list
         saved_auto_users = {}
         for user in manual_users:
-            saved_auto_users[user] = self._num_raids * 2
+            saved_auto_users[user] = self._num_raids
         # auto users can only be added back in if they have been in here for less than num_raids
         raids = self._last_raids.get(ctx.guild.id, [])
         if len(raids) > 0:
@@ -106,13 +106,9 @@ class AdventureResults:
             return StatRange(win_percent=win_percent, average_talk=0, average_attack=0)
 
         # tally up stats for raids
-        num_attack = 0
         average_attack = 0
-        attack_amount = 0
         attack_amounts = []
-        num_talk = 0
         average_talk = 0
-        talk_amount = 0
         talk_amounts = []
         num_wins = 0
         raids = self._last_raids.get(ctx.guild.id, [])
@@ -122,17 +118,13 @@ class AdventureResults:
         else:
             for raid in raids:
                 if raid["main_action"] == "attack":
-                    num_attack += 1
-                    attack_amount += raid["amount"]
                     attack_amounts.append(raid["amount"])
                 else:
-                    num_talk += 1
-                    talk_amount += raid["amount"]
                     talk_amounts.append(raid["amount"])
                 if raid["success"]:
                     num_wins += 1
-            average_talk = statistics.median(talk_amounts) if num_talk > 0 else 0
-            average_attack = statistics.median(attack_amounts) if num_attack > 0 else 0
+            average_talk = statistics.median(talk_amounts) if len(talk_amounts) > 0 else 0
+            average_attack = statistics.median(attack_amounts) if len(attack_amounts) > 0 else 0
             win_percent = num_wins / raid_count
         return StatRange(win_percent=win_percent, average_talk=average_talk, average_attack=average_attack)
 

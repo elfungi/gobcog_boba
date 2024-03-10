@@ -516,5 +516,5 @@ class LootCommands(AdventureMixin):
                     lang="ansi",
                 )
             await open_msg.edit(content=equip_msg, view=None)
-            character = await character.equip_item(item, False, is_dev(ctx.author))
+            character = await character.equip_item(item, False)
             await self.config.user(ctx.author).set(await character.to_json(ctx, self.config))
