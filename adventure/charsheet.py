@@ -517,8 +517,9 @@ class Character:
                 two_handed_item = item
             backpack_item = self.backpack.get(item.name, None)
             equip_item = self.equipment[slot]
-            if equip_only and equip_item and equip_item.name == item.name:
-                data.append(equip_item)
+            if equip_only:
+                if equip_item and equip_item.name == item.name:
+                    data.append(equip_item)
             else:
                 if backpack_item:
                     data.append(backpack_item)
@@ -578,22 +579,23 @@ class Character:
             required_parts = bonus.get("parts", 100)
             if required_parts > parts:
                 continue
-            highest_amount = 1
-            for i in [3, 5, 10, 20]:
+            highest_amount = 0
+            for i in [1, 3, 5, 10, 20]:
                 num_owned_at_upgrade = self.count_items_owned(set_items, i)
                 if num_owned_at_upgrade >= required_parts:
                     highest_amount = i
-            highest_bonus = next((x for x in set_upgrades_expanded[highest_amount] if x["parts"] == required_parts), None)
-            for key, value in highest_bonus.items():
-                if key == "parts":
-                    continue
-                if key not in ["cpmult", "xpmult", "statmult"]:
-                    set_info[key] += value
-                elif key in ["cpmult", "xpmult", "statmult"]:
-                    if value > 1:
-                        set_info[key] += value - 1
-                    elif value >= 0:
-                        set_info[key] -= 1 - value
+            if highest_amount > 0:
+                highest_bonus = next((x for x in set_upgrades_expanded[highest_amount] if x["parts"] == required_parts), None)
+                for key, value in highest_bonus.items():
+                    if key == "parts":
+                        continue
+                    if key not in ["cpmult", "xpmult", "statmult"]:
+                        set_info[key] += value
+                    elif key in ["cpmult", "xpmult", "statmult"]:
+                        if value > 1:
+                            set_info[key] += value - 1
+                        elif value >= 0:
+                            set_info[key] -= 1 - value
         return set_info
 
     def get_set_bonus(self):
@@ -642,7 +644,7 @@ class Character:
                 elif value >= 0:
                     base[k] -= 1 - value
             set_info["parts"] = parts
-            print(_set, parts, set_info)
+            # print(_set, parts, set_info)
             self.partial_sets[_set] = set_info
 
         self.gear_set_bonus = base
