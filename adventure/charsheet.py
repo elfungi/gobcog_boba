@@ -509,6 +509,7 @@ class Character:
         two_handed_item = None
         for (slot, d) in data_sorted:
             item = Item.from_json(self._ctx, d)
+            item.owned = 0
             if item.slot == Slot.two_handed:
                 # two-handed items are in the list twice so must deal with them differently
                 if two_handed_item:
@@ -522,12 +523,10 @@ class Character:
                     data.append(equip_item)
             else:
                 if backpack_item:
-                    data.append(backpack_item)
-                elif equip_item and equip_item.name == item.name:
-                    data.append(equip_item)
-                else:
-                    item.owned = 0
-                    data.append(item)
+                    item.owned += backpack_item.owned
+                if equip_item and equip_item.name == item.name:
+                    item.owned += equip_item.owned
+                data.append(item)
         return data
 
     @staticmethod
@@ -1568,7 +1567,7 @@ class Character:
     async def unequip_item(self, item: Item):
         """This handles moving an item equipment to backpack."""
         if item.name in self.backpack:
-            self.backpack[item.name].owned += 1
+            self.backpack[item.name].owned += item.owned
         else:
             self.backpack[item.name] = item
         if item.slot is not Slot.two_handed:
