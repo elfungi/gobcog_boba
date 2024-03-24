@@ -1784,7 +1784,7 @@ class Character:
             self.neck,
         ]:
             if item:
-                await self.add_to_backpack(item)
+                await self.add_to_backpack(item, item.owned)
         forged = 0
         for k, v in self.backpack.items():
             for n, i in v.to_json().items():
@@ -1863,7 +1863,7 @@ async def calculate_sp(lvl_end: int, c: Character):
     if 200 <= lvl_end < 300:
         points_200 += 1
         points_0 -= 1
-    points = (c.rebirths * 10) + (points_300 * 1) + (points_200 * 5) + (points_100 * 1) + (points_0 * 0.5)
+    points = (c.rebirths * 10) + (points_300 * 10) + (points_200 * 5) + (points_100 * 1) + (points_0 * 0.5)
 
     return int(points)
 

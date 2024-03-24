@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.14"
+    __version__ = "4.7.15"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1224,7 +1224,6 @@ class Adventure(
         magic = 0
         fumblelist: list = []
         critlist: list = []
-        failed = False
         lost = False
         with contextlib.suppress(discord.HTTPException):
             await message.clear_reactions()
@@ -1244,9 +1243,7 @@ class Adventure(
 
         if session.no_monster:
             treasure = await self.get_treasure(session, 0, 0)
-
             session.participants = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
-
             participants = {
                 "fight": fight_list,
                 "spell": magic_list,
@@ -1306,32 +1303,6 @@ class Adventure(
             ctx.guild.id, fumblelist, critlist, attack, magic
         )
 
-        fight_name_list = []
-        wizard_name_list = []
-        talk_name_list = []
-        pray_name_list = []
-        repair_list = []
-        for user in handled_fight_list:
-            fight_name_list.append(f"{bold(user.display_name)}")
-        for user in handled_magic_list:
-            wizard_name_list.append(f"{bold(user.display_name)}")
-        for user in handled_talk_list:
-            talk_name_list.append(f"{bold(user.display_name)}")
-        for user in handled_pray_list:
-            pray_name_list.append(f"{bold(user.display_name)}")
-        fighters_final_string = _(" and ").join(
-            [", ".join(fight_name_list[:-1]), fight_name_list[-1]] if len(fight_name_list) > 2 else fight_name_list
-        )
-        wizards_final_string = _(" and ").join(
-            [", ".join(wizard_name_list[:-1]), wizard_name_list[-1]] if len(wizard_name_list) > 2 else wizard_name_list
-        )
-        talkers_final_string = _(" and ").join(
-            [", ".join(talk_name_list[:-1]), talk_name_list[-1]] if len(talk_name_list) > 2 else talk_name_list
-        )
-        preachermen_final_string = _(" and ").join(
-            [", ".join(pray_name_list[:-1]), pray_name_list[-1]] if len(pray_name_list) > 2 else pray_name_list
-        )
-
         result_msg = pray_msg + talk_msg + fight_msg
         challenge_attrib = session.attribute
         hp = max(
@@ -1356,408 +1327,52 @@ class Adventure(
                 int_hp=humanize_number(hp),
             )
         if diplomacy > 0:
-            diplo_str = _("The group {status} the {challenge} with {how} **({diplomacy}/{int_dipl})**.\n").format(
+            diplo_str = _("The group {status} the {challenge} **({diplomacy}/{int_dipl})**.\n").format(
                 status=_("tried to persuade") if not persuaded else _("distracted"),
                 challenge=bold(challenge),
-                how=_("flattery") if failed or not persuaded else _("insults"),
                 diplomacy=humanize_number(diplomacy),
                 int_dipl=humanize_number(dipl),
             )
 
+        session.participants = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
         result_msg = result_msg + "\n" + damage_str + diplo_str
         await calc_msg.delete()
+
         text = ""
-        success = False
-        if (slain or persuaded) and not failed:
-            success = True
-        # treasure = [0, 0, 0, 0, 0, 0]
         treasure = await self.get_treasure(session, hp, dipl, slain, persuaded, failed, crit_bonus)
-        if session.miniboss and failed:
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + auto_list + fumblelist)
-            currency_name = await bank.get_currency_name(
-                ctx.guild,
-            )
-            for user in session.participants:
-                try:
-                    c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-                except Exception as exc:
-                    log.exception("Error with the new character sheet", exc_info=exc)
-                    continue
-                if c.bal > 0:
-                    multiplier = 1 / 3 if c.rebirths >= 10 else 0.01
-                    if c._dex < 0:
-                        dex = min(1 / abs(c._dex), 1)
-                    else:
-                        dex = max(c._dex // 10, 1)
-                    multiplier = multiplier / dex
-                    loss = round(c.bal * multiplier)
-                    pet_loss = self.roll_pet_gold_loss(c, loss)
-                    total_loss = loss + pet_loss
-                    if total_loss > c.bal:
-                        total_loss = c.bal
-                    if user not in [u for u, a, b in repair_list]:
-                        repair_list.append([user, loss, pet_loss])
-                        if c.bal > total_loss:
-                            await bank.withdraw_credits(user, total_loss)
-                        else:
-                            await bank.set_balance(user, 0)
-                c.adventures.update({"loses": c.adventures.get("loses", 0) + 1})
-                c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})
-                await self.config.user(user).set(await c.to_json(ctx, self.config))
-            loss_list = []
-            result_msg += session.miniboss["defeat"]
-            if len(repair_list) > 0:
-                temp_repair = []
-                for user, loss, pet_loss in repair_list:
-                    if user not in temp_repair:
-                        if pet_loss > 0:
-                            loss_list.append(
-                                _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
-                                    user=user.mention,
-                                    pet_loss=humanize_number(pet_loss),
-                                    currency_name=currency_name,
-                                )
-                            )
-                        loss_list.append(
-                            _("\n{user} used {loss} {currency_name}").format(
-                                user=user.mention,
-                                loss=humanize_number(loss),
-                                currency_name=currency_name,
-                            )
-                        )
-                        temp_repair.append(user)
-                if loss_list:
-                    self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
-            return await smart_embed(ctx, result_msg)
-        if session.miniboss and not slain and not persuaded:
-            lost = True
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + auto_list + fumblelist)
-            currency_name = await bank.get_currency_name(
-                ctx.guild,
-            )
-            for user in session.participants:
-                try:
-                    c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-                except Exception as exc:
-                    log.exception("Error with the new character sheet", exc_info=exc)
-                    continue
-                if c.bal > 0:
-                    multiplier = 1 / 3 if c.rebirths >= 10 else 0.01
-                    if c._dex < 0:
-                        dex = min(1 / abs(c._dex), 1)
-                    else:
-                        dex = max(c._dex // 10, 1)
-                    multiplier = multiplier / dex
-                    loss = round(c.bal * multiplier)
-                    pet_loss = self.roll_pet_gold_loss(c, loss)
-                    total_loss = loss + pet_loss
-                    if total_loss > c.bal:
-                        total_loss = c.bal
-                    if user not in [u for u, a, b in repair_list]:
-                        repair_list.append([user, loss, pet_loss])
-                        if c.bal > total_loss:
-                            await bank.withdraw_credits(user, total_loss)
-                        else:
-                            await bank.set_balance(user, 0)
-            loss_list = []
-            if len(repair_list) > 0:
-                temp_repair = []
-                for user, loss, pet_loss in repair_list:
-                    if user not in temp_repair:
-                        if pet_loss > 0:
-                            loss_list.append(
-                                _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
-                                    user=user.mention,
-                                    pet_loss=humanize_number(pet_loss),
-                                    currency_name=currency_name,
-                                )
-                            )
-                        loss_list.append(
-                            _("\n{user} used {loss} {currency_name}").format(
-                                user=user.mention,
-                                loss=humanize_number(loss),
-                                currency_name=currency_name,
-                            )
-                        )
-                        temp_repair.append(user)
-                if loss_list:
-                    self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
-            miniboss = session.challenge
-            special = session.miniboss["special"]
-            result_msg += _("The {miniboss}'s {special} was countered, but they still managed to kill you.").format(
-                miniboss=bold(miniboss), special=special
-            )
         amount = 1
         amount *= (hp + dipl) if slain and persuaded else hp if slain else dipl
         amount += int(amount * (0.25 * people))
-        currency_name = await bank.get_currency_name(ctx.guild)
-        if people == 1:
-            if slain:
-                group = fighters_final_string if len(handled_fight_list) == 1 else wizards_final_string
-                text = _("{b_group} has slain the {chall} in an epic battle!").format(
-                    b_group=group, chall=session.challenge
-                )
-                text += await self._reward(
-                    ctx,
-                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list if u not in fumblelist],
-                    amount,
-                    round(((attack if group == fighters_final_string else magic) / hp) * 0.25),
-                    treasure,
+
+        success = False
+        lost = True
+        if session.miniboss:
+            if failed:
+                result_msg += session.miniboss["defeat"]
+            else:
+                special = session.miniboss["special"]
+                result_msg += _("The {miniboss}'s {special} was countered, but they still managed to kill you.").format(
+                    miniboss=bold(session.challenge), special=special
                 )
 
-            if persuaded:
-                text = _("{b_talkers} almost died in battle, but confounded the {chall} in the last second.").format(
-                    b_talkers=talkers_final_string, chall=session.challenge
-                )
-                text += await self._reward(
-                    ctx,
-                    [u for u in handled_talk_list + handled_pray_list if u not in fumblelist],
-                    amount,
-                    round((diplomacy / dipl) * 0.25),
-                    treasure,
-                )
-
-            if not slain and not persuaded:
-                lost = True
-                currency_name = await bank.get_currency_name(
-                    ctx.guild,
-                )
-                users = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
-                for user in users:
-                    try:
-                        c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-                    except Exception as exc:
-                        log.exception("Error with the new character sheet", exc_info=exc)
-                        continue
-                    if c.bal > 0:
-                        multiplier = 1 / 3 if c.rebirths >= 10 else 0.01
-                        if c._dex < 0:
-                            dex = min(1 / abs(c._dex), 1)
-                        else:
-                            dex = max(c._dex // 10, 1)
-                        multiplier = multiplier / dex
-                        loss = round(c.bal * multiplier)
-                        pet_loss = self.roll_pet_gold_loss(c, loss)
-                        total_loss = loss + pet_loss
-                        if total_loss > c.bal:
-                            total_loss = c.bal
-                        if user not in [u for u, a, b in repair_list]:
-                            repair_list.append([user, loss, pet_loss])
-                            if c.bal > loss:
-                                await bank.withdraw_credits(user, total_loss)
-                            else:
-                                await bank.set_balance(user, 0)
-                loss_list = []
-                if len(repair_list) > 0:
-                    temp_repair = []
-                    for user, loss, pet_loss in repair_list:
-                        if user not in temp_repair:
-                            if pet_loss > 0:
-                                loss_list.append(
-                                    _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
-                                        user=user.mention,
-                                        pet_loss=humanize_number(pet_loss),
-                                        currency_name=currency_name,
-                                    )
-                                )
-                            loss_list.append(
-                                _("\n{user} used {loss} {currency_name}").format(
-                                    user=user.mention,
-                                    loss=humanize_number(loss),
-                                    currency_name=currency_name,
-                                )
-                            )
-                            temp_repair.append(user)
-                    if loss_list:
-                        self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
-                options = [
-                    _("No amount of diplomacy or valiant fighting could save you."),
-                    _("This challenge was too much for one hero."),
-                    _("You tried your best, but the group couldn't succeed at their attempt."),
-                ]
-                text = random.choice(options)
+        if not failed and (slain or persuaded):
+            success = True
+            lost = False
+            text += await self.handle_win_text(slain, persuaded, challenge, handled_pray_list, handled_fight_list,
+                                               handled_magic_list, handled_talk_list)
+            text += "\n"
+            text += await self.handle_win_rewards(ctx, slain, persuaded, handled_pray_list, handled_fight_list,
+                                                  handled_magic_list, handled_talk_list, fumblelist, hp, dipl,
+                                                  dmg_dealt, diplomacy, amount, treasure)
         else:
-            if slain and persuaded:
-                if len(pray_list) > 0:
-                    god = await self.config.god_name()
-                    if await self.config.guild(ctx.guild).god_name():
-                        god = await self.config.guild(ctx.guild).god_name()
-                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
-                        text = _(
-                            "{b_fighters} slayed the {chall} "
-                            "in battle, while {b_talkers} distracted with flattery, "
-                            "{b_wizard} chanted magical incantations and "
-                            "{b_preachers} aided in {god}'s name."
-                        ).format(
-                            b_fighters=fighters_final_string,
-                            chall=session.challenge,
-                            b_talkers=talkers_final_string,
-                            b_wizard=wizards_final_string,
-                            b_preachers=preachermen_final_string,
-                            god=god,
-                        )
-                    else:
-                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
-                        text = _(
-                            "{b_group} slayed the {chall} "
-                            "in battle, while {b_talkers} distracted with flattery and "
-                            "{b_preachers} aided in {god}'s name."
-                        ).format(
-                            b_group=group,
-                            chall=session.challenge,
-                            b_talkers=talkers_final_string,
-                            b_preachers=preachermen_final_string,
-                            god=god,
-                        )
-                else:
-                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
-                        text = _(
-                            "{b_fighters} slayed the {chall} "
-                            "in battle, while {b_talkers} distracted with insults and "
-                            "{b_wizard} chanted magical incantations."
-                        ).format(
-                            b_fighters=fighters_final_string,
-                            chall=session.challenge,
-                            b_talkers=talkers_final_string,
-                            b_wizard=wizards_final_string,
-                        )
-                    else:
-                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
-                        text = _(
-                            "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
-                        ).format(b_group=group, chall=session.challenge, b_talkers=talkers_final_string)
-                text += await self._reward(
-                    ctx,
-                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list + handled_talk_list if u not in fumblelist],
-                    amount,
-                    round(((dmg_dealt / hp) + (diplomacy / dipl)) * 0.25),
-                    treasure,
-                )
+            options = [
+                _("No amount of diplomacy or valiant fighting could save you."),
+                _("This challenge was too much for the group."),
+                _("You tried your best, but couldn't succeed."),
+            ]
+            text = random.choice(options)
+            await self.handle_loss(ctx, session.participants)
 
-            if not slain and persuaded:
-                if len(pray_list) > 0:
-                    text = _("{b_talkers} talked the {chall} down with {b_preachers}'s blessing.").format(
-                        b_talkers=talkers_final_string,
-                        chall=session.challenge,
-                        b_preachers=preachermen_final_string,
-                    )
-                else:
-                    text = _("{b_talkers} talked the {chall} down.").format(
-                        b_talkers=talkers_final_string, chall=session.challenge
-                    )
-                text += await self._reward(
-                    ctx,
-                    [u for u in handled_talk_list + handled_pray_list if u not in fumblelist],
-                    amount,
-                    round((diplomacy / dipl) * 0.25),
-                    treasure,
-                )
-
-            if slain and not persuaded:
-                if len(handled_pray_list) > 0:
-                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
-                        text = _(
-                            "{b_fighters} killed the {chall} "
-                            "in a most heroic battle with a little help from {b_preachers} and "
-                            "{b_wizard} chanting magical incantations."
-                        ).format(
-                            b_fighters=fighters_final_string,
-                            chall=session.challenge,
-                            b_preachers=preachermen_final_string,
-                            b_wizard=wizards_final_string,
-                        )
-                    else:
-                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
-                        text = _(
-                            "{b_group} killed the {chall} "
-                            "in a most heroic battle with a little help from {b_preachers}."
-                        ).format(
-                            b_group=group,
-                            chall=session.challenge,
-                            b_preachers=preachermen_final_string,
-                        )
-                else:
-                    if len(handled_magic_list) > 0 and len(handled_fight_list) > 0:
-                        text = _(
-                            "{b_fighters} killed the {chall} "
-                            "in a most heroic battle with {b_wizard} chanting magical incantations."
-                        ).format(
-                            b_fighters=fighters_final_string,
-                            chall=session.challenge,
-                            b_wizard=wizards_final_string,
-                        )
-                    else:
-                        group = fighters_final_string if len(handled_fight_list) > 0 else wizards_final_string
-                        text = _("{b_group} killed the {chall} in an epic fight.").format(
-                            b_group=group, chall=session.challenge
-                        )
-                text += await self._reward(
-                    ctx,
-                    [u for u in handled_fight_list + handled_magic_list + handled_pray_list if u not in fumblelist],
-                    amount,
-                    round((dmg_dealt / hp) * 0.25),
-                    treasure,
-                )
-
-            if not slain and not persuaded:
-                lost = True
-                currency_name = await bank.get_currency_name(
-                    ctx.guild,
-                )
-                users = set(handled_fight_list + handled_magic_list + handled_talk_list + handled_pray_list + fumblelist)
-                for user in users:
-                    try:
-                        c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
-                    except Exception as exc:
-                        log.exception("Error with the new character sheet", exc_info=exc)
-                        continue
-                    if c.bal > 0:
-                        multiplier = 1 / 3 if c.rebirths >= 10 else 0.01
-                        if c._dex < 0:
-                            dex = min(1 / abs(c._dex), 1)
-                        else:
-                            dex = max(c._dex // 10, 1)
-                        multiplier = multiplier / dex
-                        loss = round(c.bal * multiplier)
-                        pet_loss = self.roll_pet_gold_loss(c, loss)
-                        total_loss = loss + pet_loss
-                        if total_loss > c.bal:
-                            total_loss = c.bal
-                        if user not in [u for u, a, b in repair_list]:
-                            repair_list.append([user, loss, pet_loss])
-                            if c.bal > total_loss:
-                                await bank.withdraw_credits(user, total_loss)
-                            else:
-                                await bank.set_balance(user, 0)
-                options = [
-                    _("No amount of diplomacy or valiant fighting could save you."),
-                    _("This challenge was too much for the group."),
-                    _("You tried your best, but couldn't succeed."),
-                ]
-                text = random.choice(options)
-        loss_list = []
-        if len(repair_list) > 0:
-            temp_repair = []
-            for user, loss, pet_loss in repair_list:
-                if user not in temp_repair:
-                    if pet_loss > 0:
-                        loss_list.append(
-                            _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
-                                user=user.mention,
-                                pet_loss=humanize_number(pet_loss),
-                                currency_name=currency_name,
-                            )
-                        )
-                    loss_list.append(
-                        _("\n{user} used {loss} {currency_name}").format(
-                            user=user.mention,
-                            loss=humanize_number(loss),
-                            currency_name=currency_name,
-                        )
-                    )
-                    temp_repair.append(user)
-            if loss_list:
-                self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
         output = f"{result_msg}\n{text}"
         output = pagify(output, page_length=1900)
         img_sent = session.monster["image"] if not session.easy_mode else None
@@ -1766,7 +1381,6 @@ class Adventure(
             if img_sent:
                 img_sent = None
         await self._data_check(ctx)
-        session.participants = set(fight_list + magic_list + talk_list + pray_list + auto_list + fumblelist)
 
         participants = {
             "fight": fight_list,
@@ -1932,7 +1546,7 @@ class Adventure(
                         base_str = f"{self.emojis.berserk}{humanize_number(base_bonus)} PIERCE!"
                     elif c.hc == HeroClasses.ranger:
                         bonus_mod = 0.35 if c.rebirths >= HC_VETERAN_RANK else 0.25
-                        num_hits = random.randint(3, 8) if c.rebirths >= HC_VETERAN_RANK else random.randint(3, 6)
+                        num_hits = random.randint(4, 8) if c.rebirths >= HC_VETERAN_RANK else random.randint(3, 6)
                         dmg_bonus = round(base_bonus * bonus_mod)
                         attack += int((roll + crit_bonus + (dmg_bonus * num_hits) + att_value) / pdef)
                         base_str = f"🏹{humanize_number(dmg_bonus)} x {num_hits}"
@@ -2023,7 +1637,7 @@ class Adventure(
                         double_cast_bonus = round(0.65 * base_bonus)
                         base_str += f"+{self.emojis.magic_crit}️{humanize_number(double_cast_bonus)}"
                 magic += int((roll + base_bonus + double_cast_bonus + crit_bonus + int_value) / mdef)
-                bonus = base_str + crit_str
+                bonus = f"{crit_str} + {base_str}" if crit_str else f"{base_str}"
                 report += (
                     f"{bold(user.display_name)}: "
                     f"{self.emojis.dice}({roll}) + "
@@ -2394,7 +2008,6 @@ class Adventure(
                         magic_list.append(user)
             return fight_list, magic_list
 
-
     async def _add_rewards(
         self, ctx: commands.Context, user: Union[discord.Member, discord.User], exp: int, cp: int, special: Treasure
     ) -> Optional[str]:
@@ -2466,6 +2079,151 @@ class Adventure(
                 c.treasure += special
             await self.config.user(user).set(await c.to_json(ctx, self.config))
             return rebirth_text
+
+    @staticmethod
+    def format_name_list(name_list):
+        results_list = []
+        for user in name_list:
+            results_list.append(f"{bold(user.display_name)}")
+        final_str = _(" and ").join(
+            [", ".join(results_list[:-1]), results_list[-1]] if len(results_list) > 2 else results_list
+        )
+        return final_str
+
+    async def handle_win_text(self, slain, persuaded, challenge, handled_pray_list, handled_fight_list,
+                              handled_magic_list, handled_talk_list):
+        win_text = ""
+        magic_text = ""
+        pray_text = ""
+
+        fighters_final_string = self.format_name_list(handled_fight_list)
+        wizards_final_string = self.format_name_list(handled_magic_list)
+        combined_fighters_list = self.format_name_list(handled_fight_list + handled_magic_list)
+        talkers_final_string = self.format_name_list(handled_talk_list)
+        preachermen_final_string = self.format_name_list(handled_pray_list)
+
+        options = ["flattery", "insults", "jokes", "confusing political statements", "conversation about the weather",
+                   "current affairs", "questions about its future", "questions about its hopes & dreams",
+                   "grand tales of adventure", "sad tales of sorrow & loss"]
+        talk_flavor = random.choice(options)
+
+        if slain and persuaded:
+            win_text = _("{b_combined} slayed the {chall} in battle, while {b_talkers} distracted it with {flavor}").format(
+                b_combined=combined_fighters_list,
+                b_talkers=talkers_final_string,
+                flavor=talk_flavor,
+                chall=challenge
+            )
+        elif slain:
+            if len(handled_fight_list) > 0:
+                win_text = _("{b_fighters} killed the {chall} in a heroic battle").format(
+                    b_fighters=fighters_final_string,
+                    chall=challenge
+                )
+                if len(handled_magic_list) > 0:
+                    magic_text = _("{b_wizards} chanting magical incantations").format(
+                        b_wizards=wizards_final_string
+                    )
+            else:
+                win_text = _("{b_wizards} killed the {chall} in a magical clash").format(
+                    b_wizards=wizards_final_string,
+                    chall=challenge
+                )
+        elif persuaded:
+            win_text = _("{b_talkers} distracted the {chall} with {flavor}").format(
+                b_talkers=talkers_final_string,
+                flavor=talk_flavor,
+                chall=challenge
+            )
+        if len(handled_pray_list) > 0:
+            pray_text = _("with a little help from {b_preachers}").format(b_preachers=preachermen_final_string)
+
+        text = win_text
+        if pray_text:
+            text += " " + pray_text
+        if magic_text:
+            text += " and " + magic_text
+        text += "."
+        return text
+
+    async def handle_win_rewards(self, ctx: commands.Context, slain, persuaded, handled_pray_list, handled_fight_list,
+                                 handled_magic_list, handled_talk_list, fumblelist, hp, dipl, dmg_dealt,
+                                 diplomacy, amount, treasure):
+        users = []
+        reward_modifier = 0
+        if slain and persuaded:
+            users = handled_fight_list + handled_magic_list + handled_pray_list + handled_talk_list
+            reward_modifier = (dmg_dealt / hp) + (diplomacy / dipl)
+        elif slain:
+            users = handled_fight_list + handled_magic_list + handled_pray_list
+            reward_modifier = (dmg_dealt / hp)
+        elif persuaded:
+            users = handled_talk_list + handled_pray_list
+            reward_modifier = (diplomacy / dipl)
+        text = await self._reward(
+            ctx,
+            [u for u in users if u not in fumblelist],
+            amount,
+            round(reward_modifier * 0.25),
+            treasure
+        )
+        return text
+
+    async def handle_loss(self, ctx: commands.Context, participants):
+        currency_name = await bank.get_currency_name(
+            ctx.guild,
+        )
+        repair_list = []
+        for user in participants:
+            try:
+                c = await Character.from_json(ctx, self.config, user, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                continue
+            if c.bal > 0:
+                multiplier = 1 / 3 if c.rebirths >= 10 else 0.01
+                if c._dex < 0:
+                    dex = min(1 / abs(c._dex), 1)
+                else:
+                    dex = max(c._dex // 10, 1)
+                multiplier = multiplier / dex
+                loss = round(c.bal * multiplier)
+                pet_loss = self.roll_pet_gold_loss(c, loss)
+                total_loss = loss + pet_loss
+                if total_loss > c.bal:
+                    total_loss = c.bal
+                if user not in [u for u, a, b in repair_list]:
+                    repair_list.append([user, loss, pet_loss])
+                    if c.bal > total_loss:
+                        await bank.withdraw_credits(user, total_loss)
+                    else:
+                        await bank.set_balance(user, 0)
+            c.adventures.update({"loses": c.adventures.get("loses", 0) + 1})
+            c.weekly_score.update({"adventures": c.weekly_score.get("adventures", 0) + 1})
+            await self.config.user(user).set(await c.to_json(ctx, self.config))
+        loss_list = []
+        if len(repair_list) > 0:
+            temp_repair = []
+            for user, loss, pet_loss in repair_list:
+                if user not in temp_repair:
+                    if pet_loss > 0:
+                        loss_list.append(
+                            _("\n{user} used {pet_loss} {currency_name} to tend to their pet").format(
+                                user=user.mention,
+                                pet_loss=humanize_number(pet_loss),
+                                currency_name=currency_name,
+                            )
+                        )
+                    loss_list.append(
+                        _("\n{user} used {loss} {currency_name}").format(
+                            user=user.mention,
+                            loss=humanize_number(loss),
+                            currency_name=currency_name,
+                        )
+                    )
+                    temp_repair.append(user)
+            if loss_list:
+                self._loss_message[ctx.message.id] = humanize_list(loss_list).strip()
 
     async def _adv_countdown(self, ctx: commands.Context, seconds, title) -> asyncio.Task:
         await self._data_check(ctx)

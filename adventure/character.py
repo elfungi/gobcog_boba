@@ -33,7 +33,7 @@ class CharacterCommands(AdventureMixin):
         self,
         ctx: commands.Context,
         skill: Optional[SkillConverter] = None,
-        amount: int = 1,
+        amount: int = 0,
     ):
         """This allows you to spend skillpoints.
 
@@ -48,7 +48,7 @@ class CharacterCommands(AdventureMixin):
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        if amount < 1:
+        if amount < 0:
             return await smart_embed(ctx, _("Nice try :smirk:"), ephemeral=True)
         skill = skill.value if skill is not None else None  # type - ignore This returns an enum now
         await ctx.defer()
@@ -58,6 +58,10 @@ class CharacterCommands(AdventureMixin):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 return
+
+            if amount == 0:
+                amount = c.skill["pool"]
+
             if skill == "reset":
                 last_reset = await self.config.user(ctx.author).last_skill_reset()
                 if last_reset + 3600 > time.time():
