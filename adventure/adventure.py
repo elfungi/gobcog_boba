@@ -156,7 +156,7 @@ class Adventure(
         self._current_traders = {}
         self._curent_trader_stock = {}
         self._sessions: MutableMapping[int, GameSession] = {}
-        self._session_waits: MutableMapping[int: bool] = {}
+        self._session_waits: MutableMapping[int, bool] = {}
         self._react_messaged = []
         self.tasks = {}
         self.locks: MutableMapping[int, asyncio.Lock] = {}
