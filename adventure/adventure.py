@@ -93,7 +93,7 @@ class Adventure(
             user_id
         ).clear()  # This will only ever touch the separate currency, leaving bot economy to be handled by core.
 
-    __version__ = "4.7.15"
+    __version__ = "4.7.16"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -531,7 +531,7 @@ class Adventure(
         You play by reacting with the offered emojis.
         """
         await ctx.defer()
-        if ctx.guild.id and self._session_waits and self._session_waits[ctx.guild.id] is True:
+        if ctx.guild.id and self._session_waits and self._session_waits.get(ctx.guild.id, False) is True:
             return await smart_embed(
                 ctx,
                 _(
