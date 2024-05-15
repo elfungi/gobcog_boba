@@ -1501,6 +1501,7 @@ class Character:
         return len(self.backpack) >= (50 + self.get_max_level())
 
     async def add_to_backpack(self, item: Item, number: int = 1):
+        print('adding {} to backpack', item)
         if item:
             if item.name in self.backpack:
                 self.backpack[item.name].owned += number
@@ -1783,6 +1784,7 @@ class Character:
             self.charm,
             self.neck,
         ]:
+            print(item)
             if item:
                 await self.add_to_backpack(item, item.owned)
         forged = 0
