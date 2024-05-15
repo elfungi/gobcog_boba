@@ -1771,6 +1771,7 @@ class Character:
         else:
             self.rebirths = dev_val
         backpack = {}
+        processed_two_hand = False
         for item in [
             self.head,
             self.chest,
@@ -1784,8 +1785,12 @@ class Character:
             self.charm,
             self.neck,
         ]:
-            print(item)
             if item:
+                if item.slot is Slot.two_handed:
+                    if processed_two_hand is True:
+                        continue
+                    else:
+                        processed_two_hand = True
                 await self.add_to_backpack(item, item.owned)
         forged = 0
         for k, v in self.backpack.items():
