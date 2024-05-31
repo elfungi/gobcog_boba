@@ -1,5 +1,5 @@
 {
-    "Ascended Tame Dove": {
+    "Tame Dove": {
         "hp": 546.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -9,7 +9,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Weasel": {
+    "Weasel": {
         "hp": 512.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -19,7 +19,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bat": {
+    "Bat": {
         "hp": 543.0,
         "pdef": 1.01,
         "mdef": 1.55,
@@ -29,7 +29,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Snake": {
+    "Snake": {
         "hp": 507.0,
         "pdef": 1.7,
         "mdef": 1.43,
@@ -39,7 +39,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Red Squirrel": {
+    "Red Squirrel": {
         "hp": 519.25,
         "pdef": 1.2,
         "mdef": 1.67,
@@ -49,7 +49,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Mouse": {
+    "Mouse": {
         "hp": 513.25,
         "pdef": 1.6,
         "mdef": 1.31,
@@ -59,7 +59,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Rat": {
+    "Rat": {
         "hp": 525.5,
         "pdef": 1.77,
         "mdef": 2.03,
@@ -69,7 +69,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Wild Dove": {
+    "Wild Dove": {
         "hp": 537.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -79,7 +79,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Seagull": {
+    "Seagull": {
         "hp": 513.75,
         "pdef": 1.4,
         "mdef": 1.74,
@@ -89,7 +89,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Orc Peon": {
+    "Orc Peon": {
         "hp": 525.5,
         "pdef": 28.92,
         "mdef": 1.21,
@@ -99,7 +99,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Imp": {
+    "Imp": {
         "hp": 544.0,
         "pdef": 1.2,
         "mdef": 1.08,
@@ -109,7 +109,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Petty Thief": {
+    "Petty Thief": {
         "hp": 515.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -119,7 +119,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Gnoll": {
+    "Gnoll": {
         "hp": 547.0,
         "pdef": 1.51,
         "mdef": 1.2,
@@ -129,7 +129,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Slime": {
+    "Slime": {
         "hp": 524.0,
         "pdef": 1.4,
         "mdef": 1.2,
@@ -139,7 +139,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Kobold": {
+    "Kobold": {
         "hp": 524.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -149,7 +149,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bandit": {
+    "Bandit": {
         "hp": 501.75,
         "pdef": 1.2,
         "mdef": 1.3,
@@ -159,7 +159,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Cave Rat": {
+    "Cave Rat": {
         "hp": 532.75,
         "pdef": 1.2,
         "mdef": 1.51,
@@ -169,7 +169,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Plagued Deer": {
+    "Plagued Deer": {
         "hp": 513.75,
         "pdef": 1.04,
         "mdef": 1.33,
@@ -179,7 +179,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Orc": {
+    "Orc": {
         "hp": 549.0,
         "pdef": 1.83,
         "mdef": 1.2,
@@ -189,7 +189,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Raven": {
+    "Raven": {
         "hp": 504.0,
         "pdef": 1.13,
         "mdef": 29.47,
@@ -199,7 +199,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Eagle": {
+    "Eagle": {
         "hp": 516.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -209,7 +209,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Sylph": {
+    "Sylph": {
         "hp": 533.5,
         "pdef": 1.4,
         "mdef": 1.2,
@@ -219,7 +219,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Barred Owl": {
+    "Barred Owl": {
         "hp": 516.75,
         "pdef": 1.43,
         "mdef": 2.9,
@@ -229,7 +229,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Goose": {
+    "Goose": {
         "hp": 533.75,
         "pdef": 1.2,
         "mdef": 1.5,
@@ -239,7 +239,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Frost Spider": {
+    "Frost Spider": {
         "hp": 513.0,
         "pdef": 1.88,
         "mdef": 1.2,
@@ -249,7 +249,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Siren": {
+    "Siren": {
         "hp": 539.5,
         "pdef": 1.2,
         "mdef": 1.49,
@@ -259,7 +259,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Rotting Slime": {
+    "Rotting Slime": {
         "hp": 540.5,
         "pdef": 2.1,
         "mdef": 1.2,
@@ -269,7 +269,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Brown Eagle": {
+    "Brown Eagle": {
         "hp": 509.0,
         "pdef": 1.2,
         "mdef": 1.6,
@@ -279,7 +279,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Sprite": {
+    "Forest Sprite": {
         "hp": 539.0,
         "pdef": 1.42,
         "mdef": 1.1,
@@ -289,7 +289,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Lone Wolf": {
+    "Lone Wolf": {
         "hp": 507.0,
         "pdef": 1.94,
         "mdef": 1.2,
@@ -299,7 +299,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Assassin": {
+    "Assassin": {
         "hp": 546.25,
         "pdef": 2.32,
         "mdef": 1.9,
@@ -309,7 +309,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Giant Eagle": {
+    "Giant Eagle": {
         "hp": 507.25,
         "pdef": 1.1,
         "mdef": 1.2,
@@ -319,7 +319,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ram": {
+    "Ram": {
         "hp": 539.0,
         "pdef": 1.2,
         "mdef": 1.27,
@@ -329,7 +329,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Fairie": {
+    "Forest Fairie": {
         "hp": 505.0,
         "pdef": 1.74,
         "mdef": 1.2,
@@ -339,7 +339,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Troll Slave": {
+    "Troll Slave": {
         "hp": 501.0,
         "pdef": 1.2,
         "mdef": 2.03,
@@ -349,7 +349,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Striped Kestrel": {
+    "Striped Kestrel": {
         "hp": 528.0,
         "pdef": 1.2,
         "mdef": 1.97,
@@ -359,7 +359,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Goblin": {
+    "Goblin": {
         "hp": 524.25,
         "pdef": 1.2,
         "mdef": 1.73,
@@ -369,7 +369,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bloodtooth Wolf": {
+    "Bloodtooth Wolf": {
         "hp": 532.5,
         "pdef": 2.08,
         "mdef": 1.2,
@@ -379,7 +379,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Rabbit Spirit": {
+    "Rabbit Spirit": {
         "hp": 502.5,
         "pdef": 1.2,
         "mdef": 2.1,
@@ -389,7 +389,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Tiger": {
+    "Tiger": {
         "hp": 505.5,
         "pdef": 1.2,
         "mdef": 1.85,
@@ -399,7 +399,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Wild Stallion": {
+    "Wild Stallion": {
         "hp": 509.5,
         "pdef": 1.9,
         "mdef": 1.2,
@@ -409,7 +409,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ogre": {
+    "Ogre": {
         "hp": 510.5,
         "pdef": 2.05,
         "mdef": 1.49,
@@ -419,7 +419,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Orc Slavedriver": {
+    "Orc Slavedriver": {
         "hp": 544.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -429,7 +429,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ogre Bruiser": {
+    "Ogre Bruiser": {
         "hp": 515.5,
         "pdef": 1.69,
         "mdef": 1.2,
@@ -439,7 +439,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Flatland Cougar": {
+    "Flatland Cougar": {
         "hp": 536.0,
         "pdef": 1.7,
         "mdef": 1.5,
@@ -449,7 +449,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Guardian": {
+    "Forest Guardian": {
         "hp": 540.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -459,7 +459,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Swan": {
+    "Swan": {
         "hp": 531.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -469,7 +469,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Dryad Spellcaster": {
+    "Dryad Spellcaster": {
         "hp": 517.25,
         "pdef": 1.48,
         "mdef": 1.22,
@@ -479,7 +479,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Voidwalker Demon": {
+    "Voidwalker Demon": {
         "hp": 545.25,
         "pdef": 1.05,
         "mdef": 1.24,
@@ -489,7 +489,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Harpy Witch": {
+    "Harpy Witch": {
         "hp": 519.25,
         "pdef": 1.97,
         "mdef": 1.2,
@@ -499,7 +499,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Skeleton Troop Leader": {
+    "Skeleton Troop Leader": {
         "hp": 528.0,
         "pdef": 1.75,
         "mdef": 1.69,
@@ -509,7 +509,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Troll Guard": {
+    "Troll Guard": {
         "hp": 551.0,
         "pdef": 2.08,
         "mdef": 1.2,
@@ -519,7 +519,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Wood Spider": {
+    "Wood Spider": {
         "hp": 536.25,
         "pdef": 4.5,
         "mdef": 1.49,
@@ -529,7 +529,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Centaur Spirit-talker": {
+    "Centaur Spirit-talker": {
         "hp": 541.5,
         "pdef": 1.33,
         "mdef": 1.4,
@@ -539,7 +539,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Trickster Faun": {
+    "Trickster Faun": {
         "hp": 530.5,
         "pdef": 1.5,
         "mdef": 1.42,
@@ -549,7 +549,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Dappled Centaur": {
+    "Dappled Centaur": {
         "hp": 508.5,
         "pdef": 1.55,
         "mdef": 1.98,
@@ -559,7 +559,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Skeleton Berserker": {
+    "Skeleton Berserker": {
         "hp": 520.0,
         "pdef": 1.78,
         "mdef": 1.81,
@@ -569,7 +569,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Possessed Sword": {
+    "Possessed Sword": {
         "hp": 508.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -579,7 +579,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Mountain Troll": {
+    "Mountain Troll": {
         "hp": 530.75,
         "pdef": 1.2,
         "mdef": 1.73,
@@ -589,7 +589,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Hawk": {
+    "Fire Hawk": {
         "hp": 530.25,
         "pdef": 1.11,
         "mdef": 1.84,
@@ -599,7 +599,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Arcane Construct": {
+    "Arcane Construct": {
         "hp": 532.75,
         "pdef": 1.7,
         "mdef": 2.46,
@@ -609,7 +609,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Troll Berserker": {
+    "Troll Berserker": {
         "hp": 509.75,
         "pdef": 1.2,
         "mdef": 2.08,
@@ -619,7 +619,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Spectral Spirit": {
+    "Spectral Spirit": {
         "hp": 501.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -629,7 +629,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fox Spirit": {
+    "Fox Spirit": {
         "hp": 501.0,
         "pdef": 1.4,
         "mdef": 1.75,
@@ -639,7 +639,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Balrog": {
+    "Balrog": {
         "hp": 540.0,
         "pdef": 1.81,
         "mdef": 1.2,
@@ -649,7 +649,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Doomsayer Cultist": {
+    "Doomsayer Cultist": {
         "hp": 514.25,
         "pdef": 1.69,
         "mdef": 1.49,
@@ -659,7 +659,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Centaur Archwizard": {
+    "Centaur Archwizard": {
         "hp": 524.0,
         "pdef": 1.05,
         "mdef": 1.2,
@@ -669,7 +669,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Deer Spirit": {
+    "Deer Spirit": {
         "hp": 506.25,
         "pdef": 1.79,
         "mdef": 1.73,
@@ -679,7 +679,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Succubus": {
+    "Succubus": {
         "hp": 513.5,
         "pdef": 1.44,
         "mdef": 1.9,
@@ -689,7 +689,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bear": {
+    "Bear": {
         "hp": 546.5,
         "pdef": 1.2,
         "mdef": 1.63,
@@ -699,7 +699,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Satyr Bard": {
+    "Satyr Bard": {
         "hp": 533.5,
         "pdef": 1.1,
         "mdef": 1.2,
@@ -709,7 +709,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Possessed Tome": {
+    "Possessed Tome": {
         "hp": 534.0,
         "pdef": 1.85,
         "mdef": 1.3,
@@ -719,7 +719,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Owlspider": {
+    "Owlspider": {
         "hp": 507.5,
         "pdef": 1.64,
         "mdef": 1.2,
@@ -729,7 +729,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Reanimated Skeleton": {
+    "Reanimated Skeleton": {
         "hp": 523.75,
         "pdef": 1.31,
         "mdef": 1.2,
@@ -739,7 +739,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Satyr Spellcaster": {
+    "Satyr Spellcaster": {
         "hp": 549.25,
         "pdef": 1.21,
         "mdef": 2.9,
@@ -749,7 +749,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Satyr": {
+    "Satyr": {
         "hp": 525.25,
         "pdef": 1.23,
         "mdef": 1.2,
@@ -759,7 +759,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Rabid Boar": {
+    "Rabid Boar": {
         "hp": 508.25,
         "pdef": 2.9,
         "mdef": 1.47,
@@ -769,7 +769,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Spirit": {
+    "Fire Spirit": {
         "hp": 516.25,
         "pdef": 1.72,
         "mdef": 1.2,
@@ -779,7 +779,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Giant Roc": {
+    "Giant Roc": {
         "hp": 506.0,
         "pdef": 1.67,
         "mdef": 1.2,
@@ -789,7 +789,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Atronach": {
+    "Forest Atronach": {
         "hp": 515.5,
         "pdef": 1.51,
         "mdef": 1.59,
@@ -799,7 +799,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Jaguar": {
+    "Jaguar": {
         "hp": 514.5,
         "pdef": 1.2,
         "mdef": 1.9,
@@ -809,7 +809,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Sabre Cat": {
+    "Sabre Cat": {
         "hp": 512.5,
         "pdef": 1.78,
         "mdef": 1.71,
@@ -819,7 +819,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bog Beast": {
+    "Bog Beast": {
         "hp": 530.75,
         "pdef": 1.86,
         "mdef": 2.0,
@@ -829,7 +829,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Elder Treant": {
+    "Elder Treant": {
         "hp": 506.5,
         "pdef": 1.87,
         "mdef": 1.99,
@@ -839,7 +839,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Wormwing Demon": {
+    "Wormwing Demon": {
         "hp": 522.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -849,7 +849,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Cultist Lord": {
+    "Cultist Lord": {
         "hp": 528.25,
         "pdef": 1.2,
         "mdef": 1.9,
@@ -859,7 +859,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Cave Lion": {
+    "Cave Lion": {
         "hp": 527.25,
         "pdef": 1.15,
         "mdef": 1.18,
@@ -869,7 +869,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Arcane-Touched Satyr": {
+    "Arcane-Touched Satyr": {
         "hp": 523.25,
         "pdef": 1.97,
         "mdef": 2.11,
@@ -879,7 +879,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Aether Wolf": {
+    "Aether Wolf": {
         "hp": 550.5,
         "pdef": 1.2,
         "mdef": 1.48,
@@ -889,7 +889,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Abyssal Demon": {
+    "Abyssal Demon": {
         "hp": 507.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -899,7 +899,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Rabid Cave Bear": {
+    "Rabid Cave Bear": {
         "hp": 550.75,
         "pdef": 1.26,
         "mdef": 1.2,
@@ -909,7 +909,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Harpy Windsinger": {
+    "Harpy Windsinger": {
         "hp": 513.75,
         "pdef": 1.35,
         "mdef": 1.29,
@@ -919,7 +919,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Treant": {
+    "Treant": {
         "hp": 542.0,
         "pdef": 1.95,
         "mdef": 1.9,
@@ -929,7 +929,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Restless Ghost": {
+    "Restless Ghost": {
         "hp": 517.5,
         "pdef": 1.2,
         "mdef": 1.94,
@@ -939,7 +939,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Tree Spirit": {
+    "Tree Spirit": {
         "hp": 546.5,
         "pdef": 1.7,
         "mdef": 1.2,
@@ -949,7 +949,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Aether Faerie": {
+    "Aether Faerie": {
         "hp": 511.5,
         "pdef": 1.65,
         "mdef": 2.71,
@@ -959,7 +959,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Sylvan Unicorn": {
+    "Sylvan Unicorn": {
         "hp": 539.0,
         "pdef": 1.2,
         "mdef": 1.58,
@@ -969,7 +969,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bronze Guardian": {
+    "Bronze Guardian": {
         "hp": 503.0,
         "pdef": 1.9,
         "mdef": 1.66,
@@ -979,7 +979,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Spriggan": {
+    "Spriggan": {
         "hp": 511.0,
         "pdef": 1.2,
         "mdef": 1.04,
@@ -989,7 +989,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Celestial Unicorn": {
+    "Celestial Unicorn": {
         "hp": 533.5,
         "pdef": 1.5,
         "mdef": 1.2,
@@ -999,7 +999,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Voidspawn Demon": {
+    "Voidspawn Demon": {
         "hp": 542.5,
         "pdef": 1.55,
         "mdef": 1.9,
@@ -1009,7 +1009,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Harpy Matriarch": {
+    "Harpy Matriarch": {
         "hp": 509.5,
         "pdef": 1.2,
         "mdef": 1.75,
@@ -1019,7 +1019,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Orc Shieldbreaker": {
+    "Orc Shieldbreaker": {
         "hp": 509.5,
         "pdef": 1.21,
         "mdef": 1.9,
@@ -1029,7 +1029,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Arcane-Touched Spriggan": {
+    "Arcane-Touched Spriggan": {
         "hp": 511.75,
         "pdef": 1.2,
         "mdef": 1.55,
@@ -1039,7 +1039,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Trickster Tree Spirit": {
+    "Trickster Tree Spirit": {
         "hp": 546.25,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1049,7 +1049,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Spectral Kingfisher": {
+    "Spectral Kingfisher": {
         "hp": 531.75,
         "pdef": 1.2,
         "mdef": 2.21,
@@ -1059,7 +1059,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Salamander": {
+    "Fire Salamander": {
         "hp": 501.75,
         "pdef": 2.29,
         "mdef": 1.2,
@@ -1069,7 +1069,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Troll Captain": {
+    "Troll Captain": {
         "hp": 507.75,
         "pdef": 1.2,
         "mdef": 1.26,
@@ -1079,7 +1079,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Corrupted Phoenix": {
+    "Corrupted Phoenix": {
         "hp": 521.0,
         "pdef": 1.2,
         "mdef": 1.99,
@@ -1089,7 +1089,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fel-Corrupted Satyr": {
+    "Fel-Corrupted Satyr": {
         "hp": 518.0,
         "pdef": 1.56,
         "mdef": 1.86,
@@ -1099,7 +1099,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Kirin": {
+    "Forest Kirin": {
         "hp": 539.25,
         "pdef": 1.2,
         "mdef": 2.16,
@@ -1109,7 +1109,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Incubus": {
+    "Incubus": {
         "hp": 539.25,
         "pdef": 1.2,
         "mdef": 1.1,
@@ -1119,7 +1119,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Fairy": {
+    "Fire Fairy": {
         "hp": 545.25,
         "pdef": 1.2,
         "mdef": 2.2,
@@ -1129,7 +1129,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Spirit": {
+    "Forest Spirit": {
         "hp": 509.0,
         "pdef": 1.53,
         "mdef": 2.21,
@@ -1139,7 +1139,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Skeleton Trooper": {
+    "Skeleton Trooper": {
         "hp": 501.0,
         "pdef": 2.06,
         "mdef": 1.2,
@@ -1149,7 +1149,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Magma Giant": {
+    "Magma Giant": {
         "hp": 550.5,
         "pdef": 1.2,
         "mdef": 1.86,
@@ -1159,7 +1159,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Elder Forest Spirit": {
+    "Elder Forest Spirit": {
         "hp": 509.5,
         "pdef": 2.16,
         "mdef": 1.2,
@@ -1169,7 +1169,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Carved Totem": {
+    "Carved Totem": {
         "hp": 522.5,
         "pdef": 1.63,
         "mdef": 1.5,
@@ -1179,7 +1179,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Faerie": {
+    "Faerie": {
         "hp": 522.0,
         "pdef": 1.71,
         "mdef": 2.09,
@@ -1189,7 +1189,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Corrupted Dryad": {
+    "Corrupted Dryad": {
         "hp": 502.5,
         "pdef": 1.2,
         "mdef": 1.49,
@@ -1199,7 +1199,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Lesser Felguard": {
+    "Lesser Felguard": {
         "hp": 529.75,
         "pdef": 1.29,
         "mdef": 2.17,
@@ -1209,7 +1209,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Frost Troll": {
+    "Frost Troll": {
         "hp": 509.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1219,7 +1219,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Guardian Statue": {
+    "Guardian Statue": {
         "hp": 529.0,
         "pdef": 1.99,
         "mdef": 1.46,
@@ -1229,7 +1229,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Corrupted Unicorn": {
+    "Corrupted Unicorn": {
         "hp": 547.25,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1239,7 +1239,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Reanimated Totemic Guardian": {
+    "Reanimated Totemic Guardian": {
         "hp": 506.0,
         "pdef": 1.5,
         "mdef": 1.46,
@@ -1249,7 +1249,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Troll": {
+    "Forest Troll": {
         "hp": 531.25,
         "pdef": 1.8,
         "mdef": 1.72,
@@ -1259,7 +1259,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Restless Spirit": {
+    "Restless Spirit": {
         "hp": 538.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1269,7 +1269,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Satyr Lord": {
+    "Satyr Lord": {
         "hp": 540.5,
         "pdef": 2.45,
         "mdef": 1.08,
@@ -1279,7 +1279,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Charmed Wyrm Statue": {
+    "Charmed Wyrm Statue": {
         "hp": 544.5,
         "pdef": 1.32,
         "mdef": 1.2,
@@ -1289,7 +1289,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Horse Spirit": {
+    "Horse Spirit": {
         "hp": 528.75,
         "pdef": 1.35,
         "mdef": 1.89,
@@ -1299,7 +1299,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Peacock Spirit": {
+    "Peacock Spirit": {
         "hp": 543.75,
         "pdef": 1.1,
         "mdef": 1.2,
@@ -1309,7 +1309,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Pack of Wolves": {
+    "Pack of Wolves": {
         "hp": 550.0,
         "pdef": 1.98,
         "mdef": 1.2,
@@ -1319,7 +1319,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fog Beast": {
+    "Fog Beast": {
         "hp": 512.0,
         "pdef": 1.2,
         "mdef": 1.42,
@@ -1329,7 +1329,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fog Beast Minion": {
+    "Fog Beast Minion": {
         "hp": 505.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1339,7 +1339,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ancient Tree Spirit": {
+    "Ancient Tree Spirit": {
         "hp": 512.25,
         "pdef": 1.78,
         "mdef": 1.2,
@@ -1349,7 +1349,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Reanimated Statue": {
+    "Reanimated Statue": {
         "hp": 564.0,
         "pdef": 1.2,
         "mdef": 1.54,
@@ -1359,7 +1359,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Skull Spirit": {
+    "Skull Spirit": {
         "hp": 526.0,
         "pdef": 1.9,
         "mdef": 1.2,
@@ -1369,7 +1369,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Centaur Mage": {
+    "Centaur Mage": {
         "hp": 566.25,
         "pdef": 1.75,
         "mdef": 1.2,
@@ -1379,7 +1379,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Vapor Spirit": {
+    "Vapor Spirit": {
         "hp": 534.5,
         "pdef": 1.2,
         "mdef": 1.35,
@@ -1389,7 +1389,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Totem Spirit": {
+    "Totem Spirit": {
         "hp": 522.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1399,7 +1399,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Skeleton Captain": {
+    "Skeleton Captain": {
         "hp": 552.5,
         "pdef": 1.6,
         "mdef": 1.9,
@@ -1409,7 +1409,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Pterosaur": {
+    "Pterosaur": {
         "hp": 562.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1419,7 +1419,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ancient Earth Spirit": {
+    "Ancient Earth Spirit": {
         "hp": 540.75,
         "pdef": 2.01,
         "mdef": 1.75,
@@ -1429,7 +1429,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Elemental": {
+    "Fire Elemental": {
         "hp": 560.75,
         "pdef": 1.32,
         "mdef": 1.85,
@@ -1439,7 +1439,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ice Elemental": {
+    "Ice Elemental": {
         "hp": 563.0,
         "pdef": 1.96,
         "mdef": 1.9,
@@ -1449,7 +1449,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Earth Elemental": {
+    "Earth Elemental": {
         "hp": 546.0,
         "pdef": 1.23,
         "mdef": 1.2,
@@ -1459,7 +1459,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Frost Elemental": {
+    "Frost Elemental": {
         "hp": 565.0,
         "pdef": 1.04,
         "mdef": 1.2,
@@ -1469,7 +1469,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Air Elemental": {
+    "Air Elemental": {
         "hp": 605.25,
         "pdef": 1.2,
         "mdef": 1.51,
@@ -1479,7 +1479,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Lava Spirit": {
+    "Lava Spirit": {
         "hp": 601.25,
         "pdef": 1.2,
         "mdef": 2.1,
@@ -1489,7 +1489,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Cursed Tentacle": {
+    "Cursed Tentacle": {
         "hp": 599.25,
         "pdef": 1.67,
         "mdef": 1.2,
@@ -1499,7 +1499,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Witch": {
+    "Forest Witch": {
         "hp": 569.5,
         "pdef": 1.73,
         "mdef": 1.2,
@@ -1509,7 +1509,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Primal Shaman": {
+    "Primal Shaman": {
         "hp": 605.0,
         "pdef": 1.21,
         "mdef": 1.4,
@@ -1519,7 +1519,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Minotaur": {
+    "Minotaur": {
         "hp": 584.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1529,7 +1529,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Pack of Sabre Cats": {
+    "Pack of Sabre Cats": {
         "hp": 630.0,
         "pdef": 1.27,
         "mdef": 1.2,
@@ -1539,7 +1539,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ancient Spellcaster": {
+    "Ancient Spellcaster": {
         "hp": 610.0,
         "pdef": 1.03,
         "mdef": 1.2,
@@ -1549,7 +1549,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Emerald Oracle": {
+    "Emerald Oracle": {
         "hp": 629.5,
         "pdef": 1.6,
         "mdef": 1.43,
@@ -1559,7 +1559,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Obsidian Vapor Spirit": {
+    "Obsidian Vapor Spirit": {
         "hp": 641.5,
         "pdef": 1.77,
         "mdef": 1.65,
@@ -1569,7 +1569,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Enraged Oracle": {
+    "Enraged Oracle": {
         "hp": 648.5,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1579,7 +1579,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Pack of Frost Wolves": {
+    "Pack of Frost Wolves": {
         "hp": 653.0,
         "pdef": 1.23,
         "mdef": 1.2,
@@ -1589,7 +1589,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Wizard": {
+    "Wizard": {
         "hp": 678.25,
         "pdef": 1.2,
         "mdef": 1.96,
@@ -1599,7 +1599,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Minotaur Berserker": {
+    "Minotaur Berserker": {
         "hp": 742.5,
         "pdef": 1.18,
         "mdef": 1.2,
@@ -1609,7 +1609,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ethereal Cat Spirit": {
+    "Ethereal Cat Spirit": {
         "hp": 743.5,
         "pdef": 1.19,
         "mdef": 1.25,
@@ -1619,7 +1619,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ethereal Wolf Spirit": {
+    "Ethereal Wolf Spirit": {
         "hp": 757.75,
         "pdef": 1.5,
         "mdef": 2.27,
@@ -1629,7 +1629,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ethereal Bird Spirit": {
+    "Ethereal Bird Spirit": {
         "hp": 747.75,
         "pdef": 1.2,
         "mdef": 1.38,
@@ -1639,7 +1639,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Three-Headed Hydra": {
+    "Three-Headed Hydra": {
         "hp": 787.0,
         "pdef": 1.58,
         "mdef": 1.2,
@@ -1653,7 +1653,7 @@
         },
         "color": ""
     },
-    "Ascended Primal Light Elemental": {
+    "Primal Light Elemental": {
         "hp": 933.0,
         "pdef": 1.7,
         "mdef": 1.99,
@@ -1663,7 +1663,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Primal Forest Elemental": {
+    "Primal Forest Elemental": {
         "hp": 928.0,
         "pdef": 1.34,
         "mdef": 1.2,
@@ -1673,7 +1673,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Basilisk": {
+    "Basilisk": {
         "hp": 745.0,
         "pdef": 1.2,
         "mdef": 1.52,
@@ -1687,7 +1687,7 @@
         },
         "color": ""
     },
-    "Ascended Fire Wyvern": {
+    "Fire Wyvern": {
         "hp": 607.25,
         "pdef": 1.8,
         "mdef": 1.2,
@@ -1697,7 +1697,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Golden Draconid": {
+    "Golden Draconid": {
         "hp": 650.5,
         "pdef": 1.8,
         "mdef": 1.9,
@@ -1707,7 +1707,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Black Wyrm": {
+    "Black Wyrm": {
         "hp": 660.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1717,7 +1717,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ice Wyvern": {
+    "Ice Wyvern": {
         "hp": 666.75,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1727,7 +1727,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bronze Dragon": {
+    "Bronze Dragon": {
         "hp": 664.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1737,7 +1737,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ice Dragon": {
+    "Ice Dragon": {
         "hp": 663.25,
         "pdef": 1.2,
         "mdef": 1.07,
@@ -1747,7 +1747,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Aether Dragon": {
+    "Aether Dragon": {
         "hp": 683.25,
         "pdef": 1.97,
         "mdef": 2.06,
@@ -1757,7 +1757,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Emerald Wyrm": {
+    "Emerald Wyrm": {
         "hp": 676.25,
         "pdef": 1.2,
         "mdef": 1.95,
@@ -1767,7 +1767,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Nether Dragon": {
+    "Nether Dragon": {
         "hp": 684.25,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1777,7 +1777,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Obsidian Drake": {
+    "Obsidian Drake": {
         "hp": 673.5,
         "pdef": 1.47,
         "mdef": 1.79,
@@ -1787,7 +1787,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Golden Wyrm": {
+    "Golden Wyrm": {
         "hp": 711.0,
         "pdef": 1.9,
         "mdef": 1.19,
@@ -1797,7 +1797,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Ruby Dragon": {
+    "Ruby Dragon": {
         "hp": 711.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1807,7 +1807,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Red Dragon": {
+    "Red Dragon": {
         "hp": 706.0,
         "pdef": 1.53,
         "mdef": 1.2,
@@ -1817,7 +1817,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Emerald Drake": {
+    "Emerald Drake": {
         "hp": 712.5,
         "pdef": 1.8,
         "mdef": 1.2,
@@ -1827,7 +1827,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Lightning Dragon": {
+    "Lightning Dragon": {
         "hp": 731.0,
         "pdef": 1.12,
         "mdef": 2.3,
@@ -1837,7 +1837,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Silver Wyrm": {
+    "Silver Wyrm": {
         "hp": 744.0,
         "pdef": 1.2,
         "mdef": 1.1,
@@ -1847,7 +1847,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Elder Dragon": {
+    "Elder Dragon": {
         "hp": 738.25,
         "pdef": 1.14,
         "mdef": 1.8,
@@ -1857,7 +1857,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Blood Wyrm": {
+    "Blood Wyrm": {
         "hp": 767.5,
         "pdef": 1.75,
         "mdef": 1.2,
@@ -1867,7 +1867,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Sandskin Wyvern": {
+    "Sandskin Wyvern": {
         "hp": 776.75,
         "pdef": 1.1,
         "mdef": 1.5,
@@ -1877,7 +1877,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Sea Dragon": {
+    "Sea Dragon": {
         "hp": 806.0,
         "pdef": 1.96,
         "mdef": 1.2,
@@ -1887,7 +1887,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Night Dragon": {
+    "Night Dragon": {
         "hp": 770.0,
         "pdef": 1.2,
         "mdef": 1.74,
@@ -1897,7 +1897,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Golden Dragon": {
+    "Golden Dragon": {
         "hp": 777.0,
         "pdef": 1.2,
         "mdef": 1.01,
@@ -1907,7 +1907,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Reanimated Dragon": {
+    "Reanimated Dragon": {
         "hp": 803.5,
         "pdef": 1.93,
         "mdef": 1.42,
@@ -1917,7 +1917,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bronze Wyrm": {
+    "Bronze Wyrm": {
         "hp": 817.5,
         "pdef": 2.23,
         "mdef": 1.2,
@@ -1927,7 +1927,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Fire Dragon": {
+    "Fire Dragon": {
         "hp": 844.0,
         "pdef": 1.05,
         "mdef": 1.97,
@@ -1937,7 +1937,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Jade Drake": {
+    "Jade Drake": {
         "hp": 819.0,
         "pdef": 1.5,
         "mdef": 1.2,
@@ -1947,7 +1947,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Bloodrage Drake": {
+    "Bloodrage Drake": {
         "hp": 830.0,
         "pdef": 1.2,
         "mdef": 1.9,
@@ -1957,7 +1957,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Enraged Drake": {
+    "Enraged Drake": {
         "hp": 894.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -1967,7 +1967,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Crystal Drake": {
+    "Crystal Drake": {
         "hp": 911.0,
         "pdef": 1.7,
         "mdef": 1.2,
@@ -1977,7 +1977,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Abyssal Drake": {
+    "Abyssal Drake": {
         "hp": 937.0,
         "pdef": 1.9,
         "mdef": 1.2,
@@ -1987,7 +1987,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Forest Drake": {
+    "Forest Drake": {
         "hp": 939.5,
         "pdef": 1.25,
         "mdef": 1.99,
@@ -1997,7 +1997,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Earth Dragon": {
+    "Earth Dragon": {
         "hp": 977.0,
         "pdef": 1.84,
         "mdef": 1.2,
@@ -2007,7 +2007,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Viridian Amphithere": {
+    "Viridian Amphithere": {
         "hp": 976.0,
         "pdef": 1.2,
         "mdef": 1.2,
@@ -2017,7 +2017,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Golden Amphitere": {
+    "Golden Amphitere": {
         "hp": 1028.0,
         "pdef": 1.01,
         "mdef": 1.2,
@@ -2027,7 +2027,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Celestial Wyrm": {
+    "Celestial Wyrm": {
         "hp": 1103.5,
         "pdef": 1.8,
         "mdef": 1.4,
@@ -2037,7 +2037,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Golden Guardian Wyrm": {
+    "Golden Guardian Wyrm": {
         "hp": 1283.5,
         "pdef": 1.8,
         "mdef": 1.2,
@@ -2047,7 +2047,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Quintessence Dragon": {
+    "Quintessence Dragon": {
         "hp": 1353.0,
         "pdef": 1.24,
         "mdef": 2.11,
