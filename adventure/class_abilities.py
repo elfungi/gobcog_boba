@@ -87,7 +87,7 @@ class ClassAbilities(AdventureMixin):
                 if current_class is clz:
                     ctx.command.reset_cooldown(ctx)
                     return await smart_embed(ctx, _("You already are a {}.").format(clz.class_name))
-                if clz is HeroClasses.psychic and c.rebirths < 20:
+                if clz is HeroClasses.psychic and c.rebirths < 10:
                     ctx.command.reset_cooldown(ctx)
                     return await smart_embed(ctx, _("You are too inexperienced to become a {}.").format(clz.class_name))
                 view = ConfirmView(60, ctx.author)
@@ -683,8 +683,8 @@ class ClassAbilities(AdventureMixin):
             if "cooldown" not in c.heroclass:
                 c.heroclass["cooldown"] = cooldown_time + 1
             if c.heroclass["cooldown"] + cooldown_time <= time.time():
-                max_roll = 100 if c.rebirths >= 30 else 50 if c.rebirths >= 15 else 20
-                roll = random.randint(min(c.rebirths - 25 // 2, (max_roll // 2)), max_roll) / max_roll
+                max_roll = 100 if c.rebirths >= 30 else 75 if c.rebirths >= 20 else 50 if c.rebirths >= 10 else 25
+                roll = random.randint(min(c.rebirths // 2, (max_roll // 2)), max_roll) / max_roll
                 if ctx.guild.id in self._sessions and self._sessions[ctx.guild.id].insight[0] < roll:
                     self._sessions[ctx.guild.id].insight = roll, c
                     good = True
@@ -706,7 +706,7 @@ class ClassAbilities(AdventureMixin):
                 if good:
                     session = self._sessions[ctx.guild.id]
                     if roll <= 0.4:
-                        return await smart_embed(ctx, _("You suck."))
+                        return await smart_embed(ctx, _("You can't seem to focus on the fight ahead."))
                     msg = ""
                     if session.no_monster:
                         if roll >= 0.4:
