@@ -175,18 +175,18 @@ class LoadoutCommands(AdventureMixin):
                     _(
                         "{author}'s new stats: "
                         "Attack: {stat_att} [{skill_att}], "
+                        "Charisma: {stat_cha} [{skill_cha}], "
                         "Intelligence: {stat_int} [{skill_int}], "
-                        "Diplomacy: {stat_cha} [{skill_cha}], "
                         "Dexterity: {stat_dex}, "
                         "Luck: {stat_luck}."
                     ).format(
                         author=escape(ctx.author.display_name),
                         stat_att=c.get_stat_value("att")[0],
                         skill_att=c.skill["att"],
-                        stat_int=c.get_stat_value("int")[0],
-                        skill_int=c.skill["int"],
                         stat_cha=c.get_stat_value("cha")[0],
                         skill_cha=c.skill["cha"],
+                        stat_int=c.get_stat_value("int")[0],
+                        skill_int=c.skill["int"],
                         stat_dex=c.get_stat_value("dex")[0],
                         stat_luck=c.get_stat_value("luck")[0],
                     ),
