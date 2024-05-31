@@ -263,25 +263,22 @@ class Trader(discord.ui.View):
             rarity_roll = random.random()
             is_set_item = False
 
-            # 5% set
-            if rarity_roll >= 0.95:
+            # 20% set
+            if rarity_roll >= 0.80:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.set)
                 is_set_item = True
-            # 10% ascended
-            elif rarity_roll >= 0.85:
+            # 15% ascended
+            elif rarity_roll >= 0.65:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.ascended)
             # 20% legendary
-            elif rarity_roll >= 0.65:
+            elif rarity_roll >= 0.45:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.legendary)
-            # 30% epic
-            elif rarity_roll >= 0.35:
+            # 25% epic
+            elif rarity_roll >= 0.20:
                 item = await self.ctx.cog._genitem(self.ctx, Rarities.epic)
-            # 25% rare
-            elif rarity_roll >= 0.10:
-                item = await self.ctx.cog._genitem(self.ctx, Rarities.rare)
-            # 10% normal
+            # 20% rare
             else:
-                item = await self.ctx.cog._genitem(self.ctx, Rarities.normal)
+                item = await self.ctx.cog._genitem(self.ctx, Rarities.rare)
 
             base, price_func = _sell_base(item)
             if is_set_item:
