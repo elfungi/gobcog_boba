@@ -101,7 +101,6 @@ class Item:
         lvl = 1
         if self.rarity is Rarities.set:
             lvl = self.setlevel
-            print('Item is set level:' + str(lvl))
         elif self.rarity not in [Rarities.forged]:
             rarity_multiplier = max(min(self.rarity.value, 5), 1)
             mult = 1 + (rarity_multiplier / 12)
@@ -116,7 +115,6 @@ class Item:
                     * (1.7 if self.slot is Slot.two_handed else 1)
             )
             lvl = positive_stats + negative_stats
-            print('Item is NOT set level:' + str(lvl))
         return max(int(lvl), 1)
 
     @staticmethod
@@ -417,7 +415,13 @@ class Character:
 
     def equip_level(self, item: Item, rebirths=None):
         level = getattr(self, "rebirths", rebirths)
-        return item.lvl if item.rarity is Rarities.event else max(item.lvl - min(max(level // 2 - 1, 0), 50), 1)
+        if item.rarity is Rarities.event:
+            return item.lvl
+        elif item.rarity is Rarities.set:
+            return item.setlevel
+        else:
+            return max(item.lvl - min(max(level // 2 - 1, 0), 50), 1)
+        #return item.lvl if item.rarity is Rarities.event else max(item.lvl - min(max(level // 2 - 1, 0), 50), 1)
 
     def get_stat_value(self, stat: str):
         """Calculates the stats dynamically for each slot of equipment."""
