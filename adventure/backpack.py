@@ -654,15 +654,17 @@ class BackPackCommands(AdventureMixin):
                     lang="ansi",
                 )
             )
-        elif any([x for x in lookup if x.rarity is Rarities.set]):
-            return await ctx.send(
-                box(
-                    _("\n{character}, you cannot trade Set items as they are bound to your soul.").format(
-                        character=escape(ctx.author.display_name)
-                    ),
-                    lang="ansi",
-                )
-            )
+        # Comment to enable set item trading, uncomment to disable
+        #
+        #elif any([x for x in lookup if x.rarity is Rarities.set]):
+        #    return await ctx.send(
+        #        box(
+        #            _("\n{character}, you cannot trade Set items as they are bound to your soul.").format(
+        #                character=escape(ctx.author.display_name)
+        #            ),
+        #            lang="ansi",
+        #        )
+        #    )
         else:
             item = lookup[0]
             hand = item.slot.get_name()
