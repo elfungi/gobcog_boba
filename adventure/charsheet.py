@@ -51,6 +51,7 @@ class Item:
         self.luck: int = kwargs.get("luck", 0)
         self.owned: int = kwargs.get("owned", 0)
         self.set: bool = kwargs.get("set", False)
+        self.setlevel: int = kwargs.get("setlevel", 0)
         self.parts: int = kwargs.get("parts", 0)
         self.total_stats: int = self.att + self.int + self.cha + self.dex + self.luck
         if self.slot is Slot.two_handed:
@@ -98,7 +99,9 @@ class Item:
 
     def get_equip_level(self):
         lvl = 1
-        if self.rarity not in [Rarities.forged]:
+        if self.rarity is Rarities.set:
+            lvl = self.setlevel
+        elif self.rarity not in [Rarities.forged]:
             rarity_multiplier = max(min(self.rarity.value, 5), 1)
             mult = 1 + (rarity_multiplier / 12)
             positive_stats = (
@@ -197,6 +200,7 @@ class Item:
         owned = data["owned"] if "owned" in data else 1
         lvl = data["lvl"] if "lvl" in data else 1
         _set = data["set"] if "set" in data else False
+        setlevel = data["setlevel"] if "setlevel" in data else 1
         slots = data["slot"]
         degrade = data["degrade"] if "degrade" in data else 3
         parts = data["parts"] if "parts" in data else 0
@@ -212,6 +216,7 @@ class Item:
                 cha = item.get("cha", cha)
                 dex = item.get("dex", dex)
                 luck = item.get("luck", luck)
+                setlevel = item.get("setlevel", setlevel)
                 slots = item.get("slot", slots)
         if rarity not in ["legendary", "event", "ascended"]:
             degrade = 3
@@ -229,6 +234,7 @@ class Item:
             "luck": luck,
             "owned": owned,
             "set": _set,
+            "setlevel": setlevel,
             "lvl": lvl,
             "parts": parts,
             "degrade": degrade,
@@ -246,6 +252,7 @@ class Item:
                 self.dex = updated_set.get("dex", self.dex)
                 self.luck = updated_set.get("luck", self.luck)
                 self.set = updated_set.get("set", self.set)
+                self.setlevel = updated_set.get("setlevel", self.setlevel)
                 self.parts = updated_set.get("parts", self.parts)
         data = {
             self.name: {
